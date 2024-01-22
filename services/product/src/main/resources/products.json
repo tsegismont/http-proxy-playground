@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "name": "Anchovy Pizza",
+    "shortDescription": "Not so-fish-ticated!",
+    "longDescription": "An all-time classic. Simple, salty and delicious.",
+    "price": 11,
+    "image": "pizza-anchovy.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Cheese Pizza",
+    "shortDescription": "Our Winter favorite.",
+    "longDescription": "Feeling sad? Take a bite! It says cheese.",
+    "price": 12,
+    "image": "pizza-cheese.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Ham Pizza",
+    "shortDescription": "Piggybacked on tomato and melted cheese.",
+    "longDescription": "Another classic. Most children love it.",
+    "price": 13,
+    "image": "pizza-ham.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Pepperoni Pizza",
+    "shortDescription": "Italian American.",
+    "longDescription": "We've selected a pepperoni that doesn't curl.",
+    "price": 10,
+    "image": "pizza-pepperoni.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Tomato Mozzarella Pizza",
+    "shortDescription": "What else?",
+    "longDescription": "Back to basics, with the best ingredients.",
+    "price": 9,
+    "image": "pizza-tomato-mozzarella.jpg"
+  }
+]
