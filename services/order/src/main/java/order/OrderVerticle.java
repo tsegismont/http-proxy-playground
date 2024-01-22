@@ -44,7 +44,10 @@ public class OrderVerticle extends AbstractVerticle {
 
       router.route().failureHandler(ErrorHandler.create(vertx));
 
-      return vertx.createHttpServer(new HttpServerOptions().setHost(serverHost).setPort(serverPort)).requestHandler(router).listen().<Void>mapEmpty();
+      return vertx.createHttpServer(new HttpServerOptions().setHost(serverHost).setPort(serverPort))
+        .requestHandler(router)
+        .listen()
+        .<Void>mapEmpty();
 
     }).onComplete(startPromise);
   }
