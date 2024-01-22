@@ -29,9 +29,16 @@ public class OrderVerticle extends AbstractVerticle {
 
       router.route().handler(LoggerHandler.create()).handler((PlatformHandler) this::hostname).handler(ResponseTimeHandler.create());
 
+      BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
+
       router.get("/order").handler(this::orderList);
-      router.post("/order/add").handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true)).handler(this::orderAdd);
+      router.post("/order/add")
+        .handler(bodyHandler)
+        .handler(this::orderAdd);
       router.post("/order/clear").handler(this::orderClear);
+      router.post("/order/checkout")
+        .handler(bodyHandler)
+        .handler(this::orderCheckout);
 
       router.get("/health*").handler(HealthCheckHandler.create(vertx));
 
@@ -55,12 +62,14 @@ public class OrderVerticle extends AbstractVerticle {
   }
 
   private JsonObject computeOrderList() {
-    JsonObject reply = new JsonObject().put("items", items);
+    List<JsonObject> list = new ArrayList<>(items);
 
-    reply.put("count", items.size());
+    JsonObject reply = new JsonObject().put("items", list);
+
+    reply.put("count", list.size());
 
     double total = 0;
-    for (JsonObject item : items) {
+    for (JsonObject item : list) {
       total += item.getDouble("price");
     }
     reply.put("total", total);
@@ -70,6 +79,10 @@ public class OrderVerticle extends AbstractVerticle {
 
   private void orderAdd(RoutingContext rc) {
     JsonObject item = rc.body().asJsonObject();
+    if (item == null) {
+      rc.fail(400);
+      return;
+    }
 
     String name = item.getString("name");
     if (name == null || name.isBlank()) {
@@ -97,5 +110,34 @@ public class OrderVerticle extends AbstractVerticle {
   private void orderClear(RoutingContext rc) {
     items.clear();
     rc.json(computeOrderList());
+  }
+
+  private void orderCheckout(RoutingContext rc) {
+    JsonObject details = rc.body().asJsonObject();
+    if (details == null) {
+      rc.fail(400);
+      return;
+    }
+
+    String firstName = details.getString("firstName");
+    if (firstName == null || firstName.isBlank()) {
+      rc.fail(400);
+      return;
+    }
+
+    String lastName = details.getString("lastName");
+    if (lastName == null || lastName.isBlank()) {
+      rc.fail(400);
+      return;
+    }
+
+    JsonObject reply = new JsonObject()
+      .put("firstName", firstName)
+      .put("lastName", lastName)
+      .put("order", computeOrderList());
+
+    items.clear();
+
+    rc.json(reply);
   }
 }
