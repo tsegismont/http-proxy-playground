@@ -20,6 +20,7 @@
   <modules>
     <module>services/product</module>
     <module>services/order</module>
+    <module>services/account</module>
   </modules>
 
   <build>
