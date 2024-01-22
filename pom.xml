@@ -19,6 +19,7 @@
 
   <modules>
     <module>services/product</module>
+    <module>services/order</module>
   </modules>
 
   <build>
