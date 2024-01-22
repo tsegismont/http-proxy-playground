@@ -10,86 +10,99 @@
 <body>
 
 <div class="container">
-    <div class="container">
-        <main>
-            <div class="py-5 text-center">
-                <h2>Verifications</h2>
-                <p class="lead">Verify your billing details before ordering.</p>
+    <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+        <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+            <span class="fs-4">The Pizza Shop.</span>
+        </a>
+
+        <ul class="nav nav-pills">
+            <li class="nav-item"><a href="#" class="nav-link" aria-current="page">Home</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">Pizzas</a></li>
+            <li class="nav-item"><a href="#" class="nav-link active">Order</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">Account</a></li>
+        </ul>
+    </header>
+</div>
+
+<div class="container">
+    <main>
+        <div class="py-5 text-center">
+            <h2>Your order</h2>
+            <p class="lead">Verify your billing details before ordering.</p>
+        </div>
+
+        <div class="row g-5">
+            <div class="col-md-5 col-lg-4 order-md-last">
+                <h4 class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-primary">Your cart</span>
+                    <span class="badge bg-primary rounded-pill">2</span>
+                </h4>
+                <ul class="list-group mb-3">
+                    <li class="list-group-item d-flex justify-content-between lh-sm">
+                        <div>
+                            <h6 class="my-0">Cheese Pizza</h6>
+                            <small class="text-body-secondary">Our Winter favorite.</small>
+                        </div>
+                        <span class="text-body-secondary">&euro;12</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between lh-sm">
+                        <div>
+                            <h6 class="my-0">Ham Pizza</h6>
+                            <small class="text-body-secondary">Piggybacked on tomato and melted cheese.</small>
+                        </div>
+                        <span class="text-body-secondary">&euro;13</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Total (EUR)</span>
+                        <strong>&euro;25</strong>
+                    </li>
+                </ul>
+
+                <form class="card p-2">
+                    <button type="submit" class="btn btn-secondary">Clear</button>
+                </form>
             </div>
-
-            <div class="row g-5">
-                <div class="col-md-5 col-lg-4 order-md-last">
-                    <h4 class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-primary">Your cart</span>
-                        <span class="badge bg-primary rounded-pill">2</span>
-                    </h4>
-                    <ul class="list-group mb-3">
-                        <li class="list-group-item d-flex justify-content-between lh-sm">
-                            <div>
-                                <h6 class="my-0">Cheese Pizza</h6>
-                                <small class="text-body-secondary">Our Winter favorite.</small>
-                            </div>
-                            <span class="text-body-secondary">&euro;12</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between lh-sm">
-                            <div>
-                                <h6 class="my-0">Ham Pizza</h6>
-                                <small class="text-body-secondary">Piggybacked on tomato and melted cheese.</small>
-                            </div>
-                            <span class="text-body-secondary">&euro;13</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Total (EUR)</span>
-                            <strong>&euro;25</strong>
-                        </li>
-                    </ul>
-
-                    <form class="card p-2">
-                        <button type="submit" class="btn btn-secondary">Clear</button>
-                    </form>
-                </div>
-                <div class="col-md-7 col-lg-8">
-                    <h4 class="mb-3">Billing address</h4>
-                    <form class="needs-validation" novalidate>
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <label for="firstName" class="form-label">First name</label>
-                                <input type="text" class="form-control is-invalid" id="firstName" placeholder=""
-                                       value="" required>
-                                <div class="invalid-feedback">
-                                    Valid first name is required.
-                                </div>
-                            </div>
-
-                            <div class="col-sm-6">
-                                <label for="lastName" class="form-label">Last name</label>
-                                <input type="text" class="form-control" id="lastName" placeholder="" value="" required>
-                                <div class="invalid-feedback">
-                                    Valid last name is required.
-                                </div>
+            <div class="col-md-7 col-lg-8">
+                <h4 class="mb-3">Billing address</h4>
+                <form class="needs-validation" novalidate>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="firstName" class="form-label">First name</label>
+                            <input type="text" class="form-control is-invalid" id="firstName" placeholder=""
+                                   value="" required>
+                            <div class="invalid-feedback">
+                                Valid first name is required.
                             </div>
                         </div>
 
-                        <hr class="my-4">
-
-                        <h4 class="mb-3">Payment</h4>
-
-                        <div class="my-3">
-                            <div class="form-check">
-                                <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked
-                                       required>
-                                <label class="form-check-label" for="credit">Magic card</label>
+                        <div class="col-sm-6">
+                            <label for="lastName" class="form-label">Last name</label>
+                            <input type="text" class="form-control" id="lastName" placeholder="" value="" required>
+                            <div class="invalid-feedback">
+                                Valid last name is required.
                             </div>
                         </div>
+                    </div>
 
-                        <hr class="my-4">
+                    <hr class="my-4">
 
-                        <button class="w-100 btn btn-primary btn-lg disabled" type="submit">Order now!</button>
-                    </form>
-                </div>
+                    <h4 class="mb-3">Payment</h4>
+
+                    <div class="my-3">
+                        <div class="form-check">
+                            <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked
+                                   required>
+                            <label class="form-check-label" for="credit">Magic card</label>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <button class="w-100 btn btn-primary btn-lg disabled" type="submit">Order now!</button>
+                </form>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
