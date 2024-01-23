@@ -12,7 +12,7 @@
   </parent>
 
   <artifactId>http-proxy-playground-service-commons</artifactId>
-  <description>Common code for backend services</description>
+  <description>Common code for services</description>
 
   <dependencyManagement>
     <dependencies>
