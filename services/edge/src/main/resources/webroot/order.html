@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Pizza Shop! - Order</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"
+        referrerpolicy="no-referrer">
+</head>
+<body>
+
+<div class="container">
+  <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+      <span class="fs-4">The Pizza Shop.</span>
+    </a>
+
+    <ul class="nav nav-pills">
+      <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+      <li class="nav-item"><a href="pizzas.html" class="nav-link">Pizzas</a></li>
+      <li class="nav-item"><a href="order.html" class="nav-link active" aria-current="page">Order</a></li>
+      <li class="nav-item"><a href="account.html" class="nav-link">Account</a></li>
+    </ul>
+  </header>
+</div>
+
+<div class="container">
+  <main>
+    <div class="py-5 text-center">
+      <h2>Your order</h2>
+      <p class="lead">Verify your billing details before ordering.</p>
+    </div>
+
+    <div class="row g-5">
+      <div id="cart" class="col-md-5 col-lg-4 order-md-last">
+      </div>
+      <div class="col-md-7 col-lg-8">
+        <h4 class="mb-3">Billing details</h4>
+        <form action="/order/checkout" class="needs-validation" novalidate>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label for="firstName" class="form-label">First name</label>
+              <input type="text" name="firstName" class="form-control" id="firstName"
+                     placeholder="Enter your first name" value=""
+                     required>
+              <div class="invalid-feedback">
+                Valid first name is required.
+              </div>
+            </div>
+
+            <div class="col-sm-6">
+              <label for="lastName" class="form-label">Last name</label>
+              <input type="text" name="lastName" class="form-control" id="lastName" placeholder="Enter your last name"
+                     value=""
+                     required>
+              <div class="invalid-feedback">
+                Valid last name is required.
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h4 class="mb-3">Payment</h4>
+
+          <div class="my-3">
+            <div class="form-check">
+              <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked
+                     required>
+              <label class="form-check-label" for="credit">Magic card</label>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <button id="checkout" class="w-100 btn btn-primary btn-lg disabled">Order now!</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.8/handlebars.min.js"
+        integrity="sha512-E1dSFxg+wsfJ4HKjutk/WaCzK7S2wv1POn1RRPGh8ZK+ag9l244Vqxji3r6wgz9YBf6+vhQEYJZpSjqWFPg9gg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script id="cart-template" type="text/x-handlebars-template">
+  <h4 class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-primary">Your cart</span>
+    <span class="badge bg-primary rounded-pill">{{count}}</span>
+  </h4>
+  <ul class="list-group mb-3">
+    {{#each items}}
+    <li class="list-group-item d-flex justify-content-between lh-sm">
+      <div>
+        <h6 class="my-0">{{name}}</h6>
+        <small class="text-body-secondary">{{shortDescription}}</small>
+      </div>
+      <span class="text-body-secondary">&euro;{{price}}</span>
+    </li>
+    {{/each}}
+    <li class="list-group-item d-flex justify-content-between">
+      <span>Total (EUR)</span>
+      <strong>&euro;{{total}}</strong>
+    </li>
+  </ul>
+
+  <form onsubmit="return false;" class="card p-2">
+    <button id="clear" class="btn btn-secondary disabled" onclick="clearCart()">Clear</button>
+  </form>
+
+</script>
+<script>
+  fetch("/identity")
+    .then(response => response.json())
+    .then(data => {
+      const firstName = document.getElementById("firstName");
+      firstName.value = data.firstName;
+      const lastName = document.getElementById("lastName");
+      lastName.value = data.lastName;
+    })
+    .catch(err => console.log(err));
+
+  const source = document.getElementById("cart-template").innerHTML;
+  const template = Handlebars.compile(source);
+  const cartDiv = document.getElementById("cart");
+  const cart = {}
+  fetch("/order")
+    .then(response => response.json())
+    .then(data => updateCart(data))
+    .catch(err => console.log(err));
+
+  const checkoutButton = document.getElementById("checkout");
+
+  function updateCart(data) {
+    Object.assign(cart, data)
+    cartDiv.innerHTML = template(cart);
+    const clearButton = document.getElementById("clear");
+    if (cart.count > 0) {
+      checkoutButton.classList.remove("disabled");
+      clearButton.classList.remove("disabled");
+    } else {
+      checkoutButton.classList.add("disabled");
+      clearButton.classList.add("disabled");
+    }
+  }
+
+  function clearCart() {
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    };
+    fetch("/order/clear", options)
+      .then(resp => {
+        if (resp.ok) {
+          resp.json().then(cart => updateCart(cart))
+        } else {
+          alert("Something went wrong");
+        }
+      })
+      .catch(err => console.log(err));
+  }
+
+</script>
+</body>
+</html>
