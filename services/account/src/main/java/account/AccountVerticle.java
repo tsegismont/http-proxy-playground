@@ -53,6 +53,9 @@ public class AccountVerticle extends AbstractVerticle {
       BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
 
       router.get("/account").handler(this::accountDetails);
+      router.post("/delivery/add")
+        .handler(bodyHandler)
+        .handler(this::deliveryAdd);
       router.route("/delivery/updates").handler((ProtocolUpgradeHandler) this::deliveryUpdates);
 
       router.get("/health*").handler(HealthCheckHandler.create(vertx));
@@ -77,6 +80,32 @@ public class AccountVerticle extends AbstractVerticle {
       .put("firstName", "Thomas")
       .put("lastName", "Segismont");
     rc.json(reply);
+  }
+
+  private void deliveryAdd(RoutingContext rc) {
+    JsonObject delivery = rc.body().asJsonObject();
+    if (delivery == null) {
+      rc.fail(400);
+      return;
+    }
+
+    String firstName = delivery.getString("firstName");
+    if (firstName == null || firstName.isBlank()) {
+      rc.fail(400);
+      return;
+    }
+
+    String lastName = delivery.getString("lastName");
+    if (lastName == null || lastName.isBlank()) {
+      rc.fail(400);
+      return;
+    }
+
+    delivery.put("createdOn", Instant.now());
+
+    deliveries.add(delivery);
+
+    rc.response().end();
   }
 
   private void deliveryUpdates(RoutingContext rc) {
