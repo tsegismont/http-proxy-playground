@@ -1,4 +1,4 @@
-package account;
+package delivery;
 
 import common.HostnameHandler;
 import io.vertx.config.ConfigRetriever;
@@ -24,7 +24,7 @@ import java.util.Set;
 import static io.vertx.ext.web.impl.Utils.canUpgradeToWebsocket;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
-public class AccountVerticle extends AbstractVerticle {
+public class DeliveryVerticle extends AbstractVerticle {
 
   private static final Duration FIVE_MINUTES = Duration.of(5, MINUTES);
 
@@ -50,11 +50,8 @@ public class AccountVerticle extends AbstractVerticle {
         .handler(new HostnameHandler())
         .handler(ResponseTimeHandler.create());
 
-      BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
-
-      router.get("/account").handler(this::accountDetails);
       router.post("/delivery/add")
-        .handler(bodyHandler)
+        .handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
         .handler(this::deliveryAdd);
       router.route("/delivery/updates").handler((ProtocolUpgradeHandler) this::deliveryUpdates);
 
@@ -73,13 +70,6 @@ public class AccountVerticle extends AbstractVerticle {
   private void cleanDeliveries() {
     Instant limit = Instant.now().minus(FIVE_MINUTES);
     deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(FIVE_MINUTES).isBefore(limit));
-  }
-
-  private void accountDetails(RoutingContext rc) {
-    JsonObject reply = new JsonObject()
-      .put("firstName", "Thomas")
-      .put("lastName", "Segismont");
-    rc.json(reply);
   }
 
   private void deliveryAdd(RoutingContext rc) {

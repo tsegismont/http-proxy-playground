@@ -21,7 +21,7 @@
     <module>services/common</module>
     <module>services/product</module>
     <module>services/order</module>
-    <module>services/account</module>
+    <module>services/delivery</module>
   </modules>
 
   <build>

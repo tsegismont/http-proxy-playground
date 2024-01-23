@@ -11,11 +11,11 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>http-proxy-playground-account-service</artifactId>
-  <description>Backend service for accounts</description>
+  <artifactId>http-proxy-playground-delivery-service</artifactId>
+  <description>Backend service for deliveries</description>
 
   <properties>
-    <vertx.verticle>account.AccountVerticle</vertx.verticle>
+    <vertx.verticle>delivery.DeliveryVerticle</vertx.verticle>
   </properties>
 
   <dependencyManagement>
