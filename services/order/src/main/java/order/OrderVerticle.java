@@ -32,7 +32,7 @@ public class OrderVerticle extends AbstractVerticle {
       Router router = Router.router(vertx);
 
       router.route().handler(LoggerHandler.create())
-        .handler(new HostnameHandler())
+        .handler(new HostnameHandler("order"))
         .handler(ResponseTimeHandler.create());
 
       BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);

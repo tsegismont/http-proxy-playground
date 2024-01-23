@@ -33,7 +33,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create())
-        .handler(new HostnameHandler())
+        .handler(new HostnameHandler("edge"))
         .handler(ResponseTimeHandler.create());
 
       router.get().handler(StaticHandler.create());

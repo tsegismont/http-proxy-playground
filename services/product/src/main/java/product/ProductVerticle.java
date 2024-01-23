@@ -36,7 +36,7 @@ public class ProductVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create())
-        .handler(new HostnameHandler())
+        .handler(new HostnameHandler("product"))
         .handler(ResponseTimeHandler.create());
 
       router.get("/products").handler(this::productList);
