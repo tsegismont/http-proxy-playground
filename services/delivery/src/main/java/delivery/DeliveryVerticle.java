@@ -46,7 +46,8 @@ public class DeliveryVerticle extends AbstractVerticle {
 
       Router router = Router.router(vertx);
 
-      router.route().handler(LoggerHandler.create())
+      router.route()
+        .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new HostnameHandler("delivery"))
         .handler(ResponseTimeHandler.create());
 

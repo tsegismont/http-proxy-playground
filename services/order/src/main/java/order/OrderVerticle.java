@@ -9,10 +9,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.ErrorHandler;
-import io.vertx.ext.web.handler.LoggerHandler;
-import io.vertx.ext.web.handler.ResponseTimeHandler;
+import io.vertx.ext.web.handler.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +28,8 @@ public class OrderVerticle extends AbstractVerticle {
 
       Router router = Router.router(vertx);
 
-      router.route().handler(LoggerHandler.create())
+      router.route()
+        .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new HostnameHandler("order"))
         .handler(ResponseTimeHandler.create());
 

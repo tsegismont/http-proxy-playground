@@ -11,6 +11,7 @@ import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.ErrorHandler;
+import io.vertx.ext.web.handler.LoggerFormat;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.ResponseTimeHandler;
 
@@ -35,7 +36,7 @@ public class ProductVerticle extends AbstractVerticle {
       Router router = Router.router(vertx);
 
       router.route()
-        .handler(LoggerHandler.create())
+        .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new HostnameHandler("product"))
         .handler(ResponseTimeHandler.create());
 
