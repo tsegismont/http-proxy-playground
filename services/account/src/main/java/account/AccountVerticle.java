@@ -72,7 +72,7 @@ public class AccountVerticle extends AbstractVerticle {
 
   private void cleanDeliveries() {
     Instant limit = Instant.now().minus(FIVE_MINUTES);
-    deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(FIVE_MINUTES).isAfter(limit));
+    deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(FIVE_MINUTES).isBefore(limit));
   }
 
   private void accountDetails(RoutingContext rc) {
