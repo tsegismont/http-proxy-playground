@@ -1,5 +1,6 @@
 package account;
 
+import common.HostnameHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -46,7 +47,7 @@ public class AccountVerticle extends AbstractVerticle {
       Router router = Router.router(vertx);
 
       router.route().handler(LoggerHandler.create())
-        .handler((PlatformHandler) this::hostname)
+        .handler(new HostnameHandler())
         .handler(ResponseTimeHandler.create());
 
       BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
@@ -69,14 +70,6 @@ public class AccountVerticle extends AbstractVerticle {
   private void cleanDeliveries() {
     Instant limit = Instant.now().minus(FIVE_MINUTES);
     deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(FIVE_MINUTES).isAfter(limit));
-  }
-
-  private void hostname(RoutingContext rc) {
-    rc.addHeadersEndHandler(v -> {
-      rc.response().putHeader("x-served-by", System.getenv().getOrDefault("HOSTNAME", "<unknown>"));
-    });
-    rc.next();
-
   }
 
   private void accountDetails(RoutingContext rc) {

@@ -39,12 +39,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-config</artifactId>
+      <groupId>com.github.tsegismont</groupId>
+      <artifactId>http-proxy-playground-service-commons</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-web</artifactId>
+      <artifactId>vertx-config</artifactId>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -75,11 +76,6 @@
         </executions>
         <configuration>
           <redeploy>true</redeploy>
-          <archive>
-            <manifest>
-              <Multi-Release>true</Multi-Release>
-            </manifest>
-          </archive>
         </configuration>
       </plugin>
     </plugins>

@@ -1,5 +1,6 @@
 package product;
 
+import common.HostnameHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -11,7 +12,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.LoggerHandler;
-import io.vertx.ext.web.handler.PlatformHandler;
 import io.vertx.ext.web.handler.ResponseTimeHandler;
 
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class ProductVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create())
-        .handler((PlatformHandler) this::hostname)
+        .handler(new HostnameHandler())
         .handler(ResponseTimeHandler.create());
 
       router.get("/products").handler(this::productList);
@@ -57,14 +57,6 @@ public class ProductVerticle extends AbstractVerticle {
         .<Void>mapEmpty();
 
     }).onComplete(startPromise);
-  }
-
-  private void hostname(RoutingContext rc) {
-    rc.addHeadersEndHandler(v -> {
-      rc.response().putHeader("x-served-by", System.getenv().getOrDefault("HOSTNAME", "<unknown>"));
-    });
-    rc.next();
-
   }
 
   private void loadData() {

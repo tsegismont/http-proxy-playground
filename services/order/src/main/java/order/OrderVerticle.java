@@ -1,5 +1,6 @@
 package order;
 
+import common.HostnameHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -8,7 +9,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.*;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.ErrorHandler;
+import io.vertx.ext.web.handler.LoggerHandler;
+import io.vertx.ext.web.handler.ResponseTimeHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +31,9 @@ public class OrderVerticle extends AbstractVerticle {
 
       Router router = Router.router(vertx);
 
-      router.route().handler(LoggerHandler.create()).handler((PlatformHandler) this::hostname).handler(ResponseTimeHandler.create());
+      router.route().handler(LoggerHandler.create())
+        .handler(new HostnameHandler())
+        .handler(ResponseTimeHandler.create());
 
       BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
 
@@ -50,14 +56,6 @@ public class OrderVerticle extends AbstractVerticle {
         .<Void>mapEmpty();
 
     }).onComplete(startPromise);
-  }
-
-  private void hostname(RoutingContext rc) {
-    rc.addHeadersEndHandler(v -> {
-      rc.response().putHeader("x-served-by", System.getenv().getOrDefault("HOSTNAME", "<unknown>"));
-    });
-    rc.next();
-
   }
 
   private void orderList(RoutingContext rc) {
