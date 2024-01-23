@@ -12,6 +12,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.ResponseTimeHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.proxy.handler.ProxyHandler;
 import io.vertx.httpproxy.HttpProxy;
 import io.vertx.httpproxy.ProxyOptions;
@@ -34,6 +35,8 @@ public class EdgeVerticle extends AbstractVerticle {
         .handler(LoggerHandler.create())
         .handler(new HostnameHandler())
         .handler(ResponseTimeHandler.create());
+
+      router.get().handler(StaticHandler.create());
 
       ProxyHandler productProxyHandler = productProxyHandler(conf, httpClient);
       router.route("/product*").handler(productProxyHandler);
