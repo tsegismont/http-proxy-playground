@@ -39,7 +39,7 @@ class OrderCheckoutHandler implements Handler<RoutingContext> {
 
     JsonObject details = new JsonObject()
       .put("firstName", params.get("firstName"))
-      .put("lastName", params.get("firstName"));
+      .put("lastName", params.get("lastName"));
 
     orderRequest.sendJsonObject(details)
       .compose(orderReponse -> deliveryRequest.sendJsonObject(orderReponse.body()))
