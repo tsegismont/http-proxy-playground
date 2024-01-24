@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Pizza Shop! - Account</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"
+        integrity="sha512-b2QcS5SsA8tZodcDtGRELiGv5SaKSk1vDHDaQRda0htPYWZ6046lr3kJ5bAAQdpV2mmA/4v0wQF9MyU6/pDIAg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+</head>
+<body>
+
+<div class="container">
+  <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+      <span class="fs-4">The Pizza Shop.</span>
+    </a>
+
+    <ul class="nav nav-pills">
+      <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+      <li class="nav-item"><a href="pizzas.html" class="nav-link">Pizzas</a></li>
+      <li class="nav-item"><a href="order.html" class="nav-link">Order</a></li>
+      <li class="nav-item"><a href="account.html" class="nav-link active" aria-current="page">Account</a></li>
+    </ul>
+  </header>
+</div>
+
+<div class="container">
+  <main>
+    <div class="py-5 text-center">
+      <h2>Your account</h2>
+      <p class="lead">Your account details and current deliveries.</p>
+    </div>
+
+    <div class="row g-5 justify-content-center">
+      <div class="col-md-7 col-lg-8">
+        <h4 class="mb-3">Personal Details</h4>
+        <div class="row g-3">
+          <form novalidate>
+            <div class="col-sm-6">
+              <label for="firstName" class="form-label">First name</label>
+              <input type="text" readonly class="form-control-plaintext" id="firstName" value="">
+            </div>
+
+            <div class="col-sm-6">
+              <label for="lastName" class="form-label">Last name</label>
+              <input type="text" readonly class="form-control-plaintext" id="lastName" value="">
+            </div>
+          </form>
+        </div>
+
+        <hr class="my-4">
+
+        <h4 class="mb-3">Current deliveries</h4>
+
+        <div id="deliveries" class="my-3">
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"
+        integrity="sha512-X/YkDZyjTf4wyc2Vy16YGCPHwAY8rZJY+POgokZjQB2mhIRFJCckEGc6YyX9eNsPfn0PzThEuNs+uaomE5CO6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.8/handlebars.min.js"
+        integrity="sha512-E1dSFxg+wsfJ4HKjutk/WaCzK7S2wv1POn1RRPGh8ZK+ag9l244Vqxji3r6wgz9YBf6+vhQEYJZpSjqWFPg9gg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script id="delivery-template" type="text/x-handlebars-template">
+  {{#.}}
+  <div style="margin-top: 1rem;">
+    <h6>Delivery for {{firstName}} {{lastName}}, received on {{receivedDate}} at {{receiveTime}}</h6>
+    <div style="margin-top: 1rem;" class="progress" role="progressbar" aria-label="Basic example"
+         aria-valuenow="{{completion}}" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar {{progressBarClasses}}" style="width: {{completion}}%"></div>
+    </div>
+  </div>
+  {{/.}}
+</script>
+<script>
+  fetch("/identity")
+    .then(response => response.json())
+    .then(data => {
+      const firstName = document.getElementById("firstName");
+      firstName.value = data.firstName;
+      const lastName = document.getElementById("lastName");
+      lastName.value = data.lastName;
+    })
+    .catch(err => console.log(err));
+
+  const source = document.getElementById("delivery-template").innerHTML;
+  const template = Handlebars.compile(source);
+  const deliveriesDiv = document.getElementById("deliveries");
+
+  const url = new URL("/delivery/updates", window.location.href);
+  url.protocol = url.protocol.replace('http', 'ws');
+  const ws = new WebSocket(url.href);
+  ws.onmessage = (event) => {
+    const deliveries = JSON.parse(event.data);
+    for (const delivery of deliveries) {
+      const createdOn = new Date(delivery.createdOn);
+      delivery.receivedDate = createdOn.toLocaleDateString();
+      delivery.receiveTime = createdOn.toLocaleTimeString();
+      if (delivery.completion < 100) {
+        delivery.progressBarClasses = "progress-bar-striped progress-bar-animated";
+      } else {
+        delivery.progressBarClasses = "bg-success";
+      }
+    }
+    deliveriesDiv.innerHTML = template(deliveries);
+  };
+</script>
+</body>
+</html>

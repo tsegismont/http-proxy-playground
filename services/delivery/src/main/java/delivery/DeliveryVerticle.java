@@ -22,20 +22,22 @@ import java.util.List;
 import java.util.Set;
 
 import static io.vertx.ext.web.impl.Utils.canUpgradeToWebsocket;
-import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.*;
 
 public class DeliveryVerticle extends AbstractVerticle {
 
-  private static final Duration FIVE_MINUTES = Duration.of(5, MINUTES);
+  private static final Duration PREPARATION = Duration.of(90, SECONDS);
+  private static final Duration EXPIRATION = Duration.of(2, MINUTES);
 
   private final List<JsonObject> deliveries = new ArrayList<>();
   private final Set<ServerWebSocket> sockets = new HashSet<>();
 
   @Override
   public void start(Promise<Void> startPromise) {
-    vertx.setPeriodic(250, l -> {
-      cleanDeliveries();
-      pushUpdates();
+    vertx.setPeriodic(2000, l -> {
+      Instant now = Instant.now();
+      cleanDeliveries(now);
+      pushUpdates(now);
     });
 
     ConfigRetriever retriever = ConfigRetriever.create(vertx);
@@ -68,9 +70,9 @@ public class DeliveryVerticle extends AbstractVerticle {
     }).onComplete(startPromise);
   }
 
-  private void cleanDeliveries() {
-    Instant limit = Instant.now().minus(FIVE_MINUTES);
-    deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(FIVE_MINUTES).isBefore(limit));
+  private void cleanDeliveries(Instant now) {
+    Instant limit = now.minus(EXPIRATION);
+    deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(PREPARATION).isBefore(limit));
   }
 
   private void deliveryAdd(RoutingContext rc) {
@@ -113,10 +115,20 @@ public class DeliveryVerticle extends AbstractVerticle {
     }
   }
 
-  private void pushUpdates() {
-    JsonArray message = new JsonArray(new ArrayList<>(deliveries));
+  private void pushUpdates(Instant now) {
+    List<JsonObject> message = new ArrayList<>(deliveries.size());
+    for (JsonObject delivery : deliveries) {
+
+      delivery.remove("order");
+
+      long elapsed = delivery.getInstant("createdOn").until(now, MILLIS);
+      long completion = elapsed >= PREPARATION.toMillis() ? 100 : Math.ceilDiv(100 * elapsed, PREPARATION.toMillis());
+      delivery.put("completion", completion);
+      message.add(delivery);
+    }
+
     for (ServerWebSocket socket : sockets) {
-      socket.writeBinaryMessage(message.toBuffer());
+      socket.writeTextMessage(new JsonArray(message).encode());
     }
   }
 }
