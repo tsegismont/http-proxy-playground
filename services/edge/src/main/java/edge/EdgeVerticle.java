@@ -1,6 +1,6 @@
 package edge;
 
-import common.HostnameHandler;
+import common.XServedByHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -36,7 +36,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new HostnameHandler("edge"))
+        .handler(new XServedByHandler("edge"))
         .handler(ResponseTimeHandler.create());
 
       router.get().handler(StaticHandler.create().setCachingEnabled(true));
@@ -88,6 +88,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
     httpProxy.origin(productServerPort, productServerHost);
+    httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
@@ -98,6 +99,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(false), httpClient);
     httpProxy.origin(orderServerPort, orderServerHost);
+    httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
@@ -108,6 +110,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.origin(deliveryServerPort, deliveryServerHost);
+    httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }

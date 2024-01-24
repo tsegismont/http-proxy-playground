@@ -1,6 +1,6 @@
 package product;
 
-import common.HostnameHandler;
+import common.XServedByHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -34,7 +34,7 @@ public class ProductVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new HostnameHandler("product"))
+        .handler(new XServedByHandler("product"))
         .handler(ResponseTimeHandler.create());
 
       router.get("/products").handler(this::productList);

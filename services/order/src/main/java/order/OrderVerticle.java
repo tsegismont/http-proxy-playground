@@ -1,6 +1,6 @@
 package order;
 
-import common.HostnameHandler;
+import common.XServedByHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -30,7 +30,7 @@ public class OrderVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new HostnameHandler("order"))
+        .handler(new XServedByHandler("order"))
         .handler(ResponseTimeHandler.create());
 
       BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);

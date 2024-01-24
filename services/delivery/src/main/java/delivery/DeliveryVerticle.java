@@ -1,6 +1,6 @@
 package delivery;
 
-import common.HostnameHandler;
+import common.XServedByHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -48,7 +48,7 @@ public class DeliveryVerticle extends AbstractVerticle {
 
       router.route()
         .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new HostnameHandler("delivery"))
+        .handler(new XServedByHandler("delivery"))
         .handler(ResponseTimeHandler.create());
 
       router.post("/delivery/add")
