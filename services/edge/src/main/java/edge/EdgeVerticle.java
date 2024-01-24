@@ -19,6 +19,7 @@ import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.proxy.handler.ProxyHandler;
 import io.vertx.httpproxy.HttpProxy;
 import io.vertx.httpproxy.ProxyOptions;
+import io.vertx.httpproxy.cache.CacheOptions;
 
 public class EdgeVerticle extends AbstractVerticle {
 
@@ -42,7 +43,7 @@ public class EdgeVerticle extends AbstractVerticle {
         .handler(new HostnameHandler("edge"))
         .handler(ResponseTimeHandler.create());
 
-      router.get().handler(StaticHandler.create());
+      router.get().handler(StaticHandler.create().setCachingEnabled(true));
 
       router.get("/identity").handler(this::identity);
 
@@ -116,7 +117,14 @@ public class EdgeVerticle extends AbstractVerticle {
     String productServerHost = conf.getString("productServerHost", "127.0.0.1");
     Integer productServerPort = conf.getInteger("productServerPort", 8081);
 
-    HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(false), httpClient);
+    CacheOptions cacheOptions = new CacheOptions()
+      .setMaxSize(512);
+
+    ProxyOptions proxyOptions = new ProxyOptions()
+      .setCacheOptions(cacheOptions)
+      .setSupportWebSocket(false);
+
+    HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
     httpProxy.origin(productServerPort, productServerHost);
 
     return ProxyHandler.create(httpProxy);

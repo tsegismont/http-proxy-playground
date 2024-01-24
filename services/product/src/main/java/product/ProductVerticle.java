@@ -10,10 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.ErrorHandler;
-import io.vertx.ext.web.handler.LoggerFormat;
-import io.vertx.ext.web.handler.LoggerHandler;
-import io.vertx.ext.web.handler.ResponseTimeHandler;
+import io.vertx.ext.web.handler.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,6 +44,8 @@ public class ProductVerticle extends AbstractVerticle {
       router.get("/product/:id/image")
         .handler(this::extractId)
         .handler(this::productImage);
+
+      router.get("/static/*").handler(StaticHandler.create().setCachingEnabled(true));
 
       router.get("/health*").handler(HealthCheckHandler.create(vertx));
 
@@ -96,7 +95,7 @@ public class ProductVerticle extends AbstractVerticle {
     if (json == null) {
       rc.response().setStatusCode(404).end();
     } else {
-      rc.response().sendFile("images/" + json.getString("image"));
+      rc.reroute("/static/images/" + json.getString("image"));
     }
   }
 }
