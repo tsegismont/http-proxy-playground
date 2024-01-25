@@ -37,11 +37,11 @@ public class ProductVerticle extends AbstractVerticle {
         .handler(new XServedByHandler("product"))
         .handler(ResponseTimeHandler.create());
 
-      router.get("/products").handler(this::productList);
-      router.get("/product/:id")
+      router.get("/annoying-prefix/products").handler(this::productList);
+      router.get("/annoying-prefix/product/:id")
         .handler(this::extractId)
         .handler(this::product);
-      router.get("/product/:id/image")
+      router.get("/annoying-prefix/product/:id/image")
         .handler(this::extractId)
         .handler(this::productImage);
 

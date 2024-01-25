@@ -111,6 +111,8 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
     httpProxy.origin(productServerPort, productServerHost);
+    httpProxy.addInterceptor(new ProductPathInterceptor());
+    httpProxy.addInterceptor(new ProductImageFieldInterceptor(vertx));
     httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);
