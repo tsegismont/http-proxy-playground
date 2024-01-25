@@ -79,7 +79,8 @@ public class DeliveryVerticle extends AbstractVerticle {
         .setPort(serverPort)
         .setUseAlpn(true)
         .setSsl(true)
-        .setKeyCertOptions(keyCertOptions);
+        .setKeyCertOptions(keyCertOptions)
+        .setCompressionSupported(true);
 
       return vertx.createHttpServer(options)
         .requestHandler(router)

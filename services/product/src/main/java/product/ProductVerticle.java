@@ -51,7 +51,12 @@ public class ProductVerticle extends AbstractVerticle {
 
       router.route().failureHandler(ErrorHandler.create(vertx));
 
-      return vertx.createHttpServer(new HttpServerOptions().setHost(serverHost).setPort(serverPort))
+      HttpServerOptions options = new HttpServerOptions()
+        .setHost(serverHost)
+        .setPort(serverPort)
+        .setCompressionSupported(true);
+
+      return vertx.createHttpServer(options)
         .requestHandler(router)
         .listen()
         .<Void>mapEmpty();

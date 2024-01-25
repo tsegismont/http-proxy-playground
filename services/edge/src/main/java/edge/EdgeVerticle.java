@@ -26,7 +26,12 @@ public class EdgeVerticle extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> startPromise) {
-    HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setTrustAll(true).setVerifyHost(false));
+    HttpClientOptions clientOptions = new HttpClientOptions()
+      .setTrustAll(true)
+      .setVerifyHost(false)
+      .setDecompressionSupported(true);
+
+    HttpClient httpClient = vertx.createHttpClient(clientOptions);
 
     ConfigRetriever retriever = ConfigRetriever.create(vertx);
     retriever.getConfig().compose(conf -> {
@@ -75,7 +80,8 @@ public class EdgeVerticle extends AbstractVerticle {
         .setPort(serverPort)
         .setUseAlpn(true)
         .setSsl(true)
-        .setKeyCertOptions(keyCertOptions);
+        .setKeyCertOptions(keyCertOptions)
+        .setCompressionSupported(true);
 
       return vertx.createHttpServer(options)
         .requestHandler(router)

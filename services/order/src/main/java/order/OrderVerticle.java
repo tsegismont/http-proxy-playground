@@ -65,8 +65,8 @@ public class OrderVerticle extends AbstractVerticle {
         .setPort(serverPort)
         .setUseAlpn(false)
         .setSsl(true)
-        .setKeyCertOptions(keyCertOptions);
-
+        .setKeyCertOptions(keyCertOptions)
+        .setCompressionSupported(true);
 
       return vertx.createHttpServer(options)
         .requestHandler(router)
