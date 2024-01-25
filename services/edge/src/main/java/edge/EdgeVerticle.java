@@ -5,12 +5,17 @@ import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PfxOptions;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.proxy.handler.ProxyHandler;
 import io.vertx.httpproxy.HttpProxy;
@@ -19,18 +24,12 @@ import io.vertx.httpproxy.cache.CacheOptions;
 
 public class EdgeVerticle extends AbstractVerticle {
 
-  private WebClient webClient;
-
   @Override
   public void start(Promise<Void> startPromise) {
-    HttpClient httpClient = vertx.createHttpClient();
-    webClient = WebClient.wrap(httpClient);
+    HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setTrustAll(true).setVerifyHost(false));
 
     ConfigRetriever retriever = ConfigRetriever.create(vertx);
     retriever.getConfig().compose(conf -> {
-
-      String serverHost = conf.getString("serverHost", "0.0.0.0");
-      Integer serverPort = conf.getInteger("serverPort", 8080);
 
       Router router = Router.router(vertx);
 
@@ -60,7 +59,25 @@ public class EdgeVerticle extends AbstractVerticle {
 
       router.route().failureHandler(ErrorHandler.create(vertx));
 
-      return vertx.createHttpServer(new HttpServerOptions().setHost(serverHost).setPort(serverPort))
+      String serverHost = conf.getString("serverHost", "0.0.0.0");
+      Integer serverPort = conf.getInteger("serverPort", 8443);
+      String serverKeyPath = conf.getString("serverKeyPath");
+      String serverCertPath = conf.getString("serverCertPath");
+      KeyCertOptions keyCertOptions;
+      if (serverKeyPath != null && serverCertPath != null) {
+        keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
+      } else {
+        keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
+      }
+
+      HttpServerOptions options = new HttpServerOptions()
+        .setHost(serverHost)
+        .setPort(serverPort)
+        .setUseAlpn(true)
+        .setSsl(true)
+        .setKeyCertOptions(keyCertOptions);
+
+      return vertx.createHttpServer(options)
         .requestHandler(router)
         .listen()
         .<Void>mapEmpty();
@@ -95,10 +112,16 @@ public class EdgeVerticle extends AbstractVerticle {
 
   private ProxyHandler orderProxyHandler(JsonObject conf, HttpClient httpClient) {
     String orderServerHost = conf.getString("orderServerHost", "127.0.0.1");
-    Integer orderServerPort = conf.getInteger("orderServerPort", 8082);
+    Integer orderServerPort = conf.getInteger("orderServerPort", 8445);
+    SocketAddress origin = SocketAddress.inetSocketAddress(orderServerPort, orderServerHost);
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(false), httpClient);
-    httpProxy.origin(orderServerPort, orderServerHost);
+    httpProxy.originRequestProvider((request, client) -> {
+      RequestOptions requestOptions = new RequestOptions()
+        .setServer(origin)
+        .setSsl(true);
+      return client.request(requestOptions);
+    });
     httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);
@@ -106,10 +129,16 @@ public class EdgeVerticle extends AbstractVerticle {
 
   private ProxyHandler deliveryProxyHandler(JsonObject conf, HttpClient httpClient) {
     String deliveryServerHost = conf.getString("deliveryServerHost", "127.0.0.1");
-    Integer deliveryServerPort = conf.getInteger("deliveryServerPort", 8083);
+    Integer deliveryServerPort = conf.getInteger("deliveryServerPort", 8446);
+    SocketAddress origin = SocketAddress.inetSocketAddress(deliveryServerPort, deliveryServerHost);
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
-    httpProxy.origin(deliveryServerPort, deliveryServerHost);
+    httpProxy.originRequestProvider((request, client) -> {
+      RequestOptions requestOptions = new RequestOptions()
+        .setServer(origin)
+        .setSsl(true);
+      return client.request(requestOptions);
+    });
     httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);

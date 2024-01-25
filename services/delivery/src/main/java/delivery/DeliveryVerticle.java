@@ -9,6 +9,9 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -43,9 +46,6 @@ public class DeliveryVerticle extends AbstractVerticle {
     ConfigRetriever retriever = ConfigRetriever.create(vertx);
     retriever.getConfig().compose(conf -> {
 
-      String serverHost = conf.getString("serverHost", "0.0.0.0");
-      Integer serverPort = conf.getInteger("serverPort", 8083);
-
       Router router = Router.router(vertx);
 
       router.route()
@@ -62,7 +62,26 @@ public class DeliveryVerticle extends AbstractVerticle {
 
       router.route().failureHandler(ErrorHandler.create(vertx));
 
-      return vertx.createHttpServer(new HttpServerOptions().setHost(serverHost).setPort(serverPort))
+      String serverKeyPath = conf.getString("serverKeyPath");
+      String serverCertPath = conf.getString("serverCertPath");
+      KeyCertOptions keyCertOptions;
+      if (serverKeyPath != null && serverCertPath != null) {
+        keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
+      } else {
+        keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
+      }
+
+      String serverHost = conf.getString("serverHost", "0.0.0.0");
+      Integer serverPort = conf.getInteger("serverPort", 8446);
+
+      HttpServerOptions options = new HttpServerOptions()
+        .setHost(serverHost)
+        .setPort(serverPort)
+        .setUseAlpn(true)
+        .setSsl(true)
+        .setKeyCertOptions(keyCertOptions);
+
+      return vertx.createHttpServer(options)
         .requestHandler(router)
         .listen()
         .<Void>mapEmpty();

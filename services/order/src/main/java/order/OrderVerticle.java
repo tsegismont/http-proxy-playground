@@ -6,6 +6,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -22,9 +25,6 @@ public class OrderVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) {
     ConfigRetriever retriever = ConfigRetriever.create(vertx);
     retriever.getConfig().compose(conf -> {
-
-      String serverHost = conf.getString("serverHost", "0.0.0.0");
-      Integer serverPort = conf.getInteger("serverPort", 8082);
 
       Router router = Router.router(vertx);
 
@@ -48,7 +48,27 @@ public class OrderVerticle extends AbstractVerticle {
 
       router.route().failureHandler(ErrorHandler.create(vertx));
 
-      return vertx.createHttpServer(new HttpServerOptions().setHost(serverHost).setPort(serverPort))
+      String serverHost = conf.getString("serverHost", "0.0.0.0");
+      Integer serverPort = conf.getInteger("serverPort", 8445);
+
+      String serverKeyPath = conf.getString("serverKeyPath");
+      String serverCertPath = conf.getString("serverCertPath");
+      KeyCertOptions keyCertOptions;
+      if (serverKeyPath != null && serverCertPath != null) {
+        keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
+      } else {
+        keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
+      }
+
+      HttpServerOptions options = new HttpServerOptions()
+        .setHost(serverHost)
+        .setPort(serverPort)
+        .setUseAlpn(false)
+        .setSsl(true)
+        .setKeyCertOptions(keyCertOptions);
+
+
+      return vertx.createHttpServer(options)
         .requestHandler(router)
         .listen()
         .<Void>mapEmpty();

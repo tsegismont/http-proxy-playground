@@ -18,17 +18,19 @@ class OrderCheckoutHandler implements Handler<RoutingContext> {
     WebClient webClient = WebClient.wrap(httpClient);
 
     String orderServerHost = conf.getString("orderServerHost", "127.0.0.1");
-    int orderServerPort = conf.getInteger("orderServerPort", 8082);
+    int orderServerPort = conf.getInteger("orderServerPort", 8445);
 
     orderRequest = webClient.post(orderServerPort, orderServerHost, "/order/checkout")
+      .ssl(true)
       .expect(ResponsePredicates.STATUS_OK)
       .expect(ResponsePredicates.CONTENT_JSON)
       .as(BodyCodec.jsonObject());
 
     String deliveryServerHost = conf.getString("deliveryServerHost", "127.0.0.1");
-    int deliveryServerPort = conf.getInteger("deliveryServerPort", 8083);
+    int deliveryServerPort = conf.getInteger("deliveryServerPort", 8446);
 
     deliveryRequest = webClient.post(deliveryServerPort, deliveryServerHost, "/delivery/add")
+      .ssl(true)
       .expect(ResponsePredicates.STATUS_OK)
       .as(BodyCodec.jsonObject());
   }
