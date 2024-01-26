@@ -3,29 +3,33 @@ package edge;
 import common.XServedByHandler;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.http.RequestOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.ext.auth.properties.PropertyFileAuthentication;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.proxy.handler.ProxyHandler;
-import io.vertx.httpproxy.HttpProxy;
-import io.vertx.httpproxy.ProxyOptions;
+import io.vertx.ext.web.sstore.cookie.CookieSessionStore;
+import io.vertx.httpproxy.*;
 import io.vertx.httpproxy.cache.CacheOptions;
 
 public class EdgeVerticle extends AbstractVerticle {
 
+  private JsonObject identities;
+
   @Override
   public void start(Promise<Void> startPromise) {
+    identities = vertx.fileSystem().readFileBlocking("identities.json").toJsonObject();
+
     HttpClientOptions clientOptions = new HttpClientOptions()
       .setTrustAll(true)
       .setVerifyHost(false)
@@ -45,20 +49,38 @@ public class EdgeVerticle extends AbstractVerticle {
 
       router.get().handler(StaticHandler.create().setCachingEnabled(true));
 
-      router.get("/identity").handler(this::identity);
+      router.route().handler(SessionHandler.create(CookieSessionStore.create(vertx, "foobar")));
+
+      BasicAuthHandler basicAuthHandler = BasicAuthHandler.create(PropertyFileAuthentication.create(vertx, "users.properties"));
+      TokenMaintenanceHandler tokenMaintenanceHandler = new TokenMaintenanceHandler(vertx);
+
+      router.get("/identity")
+        .handler(basicAuthHandler)
+        .handler(tokenMaintenanceHandler)
+        .handler(this::identity);
 
       router.get("/order/checkout")
         .handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
+        .handler(basicAuthHandler)
+        .handler(tokenMaintenanceHandler)
         .handler(new OrderCheckoutHandler(httpClient, conf));
 
       ProxyHandler productProxyHandler = productProxyHandler(conf, httpClient);
-      router.route("/product*").handler(productProxyHandler);
+      router.route("/product*")
+        .handler(basicAuthHandler)
+        .handler(productProxyHandler);
 
       ProxyHandler orderProxyHandler = orderProxyHandler(conf, httpClient);
-      router.route("/order*").handler(orderProxyHandler);
+      router.route("/order*")
+        .handler(basicAuthHandler)
+        .handler(tokenMaintenanceHandler)
+        .handler(orderProxyHandler);
 
       ProxyHandler deliveryProxyHandler = deliveryProxyHandler(conf, httpClient);
-      router.route("/delivery*").handler(deliveryProxyHandler);
+      router.route("/delivery*")
+        .handler(basicAuthHandler)
+        .handler(tokenMaintenanceHandler)
+        .handler(deliveryProxyHandler);
 
       router.get("/health*").handler(HealthCheckHandler.create(vertx));
 
@@ -92,9 +114,8 @@ public class EdgeVerticle extends AbstractVerticle {
   }
 
   private void identity(RoutingContext rc) {
-    JsonObject reply = new JsonObject()
-      .put("firstName", "Thomas")
-      .put("lastName", "Segismont");
+    String username = rc.user().principal().getString("username");
+    JsonObject reply = identities.getJsonObject(username);
     rc.json(reply);
   }
 
@@ -130,6 +151,14 @@ public class EdgeVerticle extends AbstractVerticle {
         .setSsl(true);
       return client.request(requestOptions);
     });
+    httpProxy.addInterceptor(new ProxyInterceptor() {
+      @Override
+      public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
+        String token = Vertx.currentContext().getLocal("token");
+        context.request().putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        return context.sendRequest();
+      }
+    });
     httpProxy.addInterceptor(new XServedByHeaderInterceptor());
 
     return ProxyHandler.create(httpProxy);
@@ -142,9 +171,11 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
+      String token = Vertx.currentContext().getLocal("token");
       RequestOptions requestOptions = new RequestOptions()
         .setServer(origin)
-        .setSsl(true);
+        .setSsl(true)
+        .putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return client.request(requestOptions);
     });
     httpProxy.addInterceptor(new XServedByHeaderInterceptor());

@@ -43,8 +43,14 @@ class OrderCheckoutHandler implements Handler<RoutingContext> {
       .put("firstName", params.get("firstName"))
       .put("lastName", params.get("lastName"));
 
-    orderRequest.sendJsonObject(details)
-      .compose(orderReponse -> deliveryRequest.sendJsonObject(orderReponse.body()))
+    String token = rc.session().get("token");
+
+    orderRequest
+      .bearerTokenAuthentication(token)
+      .sendJsonObject(details)
+      .compose(orderReponse -> deliveryRequest
+        .bearerTokenAuthentication(token)
+        .sendJsonObject(orderReponse.body()))
       .onComplete(v -> rc.redirect("/account.html"), rc::fail);
   }
 }

@@ -9,6 +9,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
+import io.vertx.ext.auth.KeyStoreOptions;
+import io.vertx.ext.auth.jwt.JWTAuth;
+import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -32,6 +35,16 @@ public class OrderVerticle extends AbstractVerticle {
         .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new XServedByHandler("order"))
         .handler(ResponseTimeHandler.create());
+
+      JWTAuthOptions authConfig = new JWTAuthOptions()
+        .setKeyStore(new KeyStoreOptions()
+          .setType("PKCS12")
+          .setPath("http-proxy-playground.p12")
+          .setPassword("foobar"));
+
+      JWTAuth authProvider = JWTAuth.create(vertx, authConfig);
+
+      router.route("/order*").handler(JWTAuthHandler.create(authProvider));
 
       BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
 
