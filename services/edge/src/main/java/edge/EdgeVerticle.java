@@ -12,6 +12,7 @@ import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.auth.properties.PropertyFileAuthentication;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
@@ -106,7 +107,8 @@ public class EdgeVerticle extends AbstractVerticle {
         .setUseAlpn(true)
         .setSsl(true)
         .setKeyCertOptions(keyCertOptions)
-        .setCompressionSupported(true);
+        .setCompressionSupported(true)
+        .setTracingPolicy(TracingPolicy.ALWAYS);
 
       return vertx.createHttpServer(options)
         .requestHandler(router)

@@ -14,10 +14,6 @@
   <artifactId>http-proxy-playground-service-commons</artifactId>
   <description>Common code for services</description>
 
-  <properties>
-    <micrometer.version>1.11.5</micrometer.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -26,6 +22,13 @@
         <version>${log4j.version}</version>
         <scope>import</scope>
         <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>io.vertx</groupId>
@@ -58,6 +61,14 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
       <version>${micrometer.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-opentelemetry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>

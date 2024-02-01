@@ -14,7 +14,10 @@
     <maven.compiler.release>21</maven.compiler.release>
     <log4j.version>2.22.1</log4j.version>
     <jackson.version>2.16.1</jackson.version>
+    <opentelemetry.version>1.34.1</opentelemetry.version>
+    <micrometer.version>1.11.5</micrometer.version>
     <vertx.version>4.5.1</vertx.version>
+    <vertx.launcher>common.CustomLauncher</vertx.launcher>
   </properties>
 
   <modules>

@@ -16,7 +16,6 @@
 
   <properties>
     <vertx.verticle>product.ProductVerticle</vertx.verticle>
-    <vertx.launcher>common.CustomLauncher</vertx.launcher>
   </properties>
 
   <dependencyManagement>
@@ -27,6 +26,13 @@
         <version>${log4j.version}</version>
         <scope>import</scope>
         <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>io.vertx</groupId>
