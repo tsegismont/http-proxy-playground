@@ -16,6 +16,7 @@
 
   <properties>
     <vertx.verticle>product.ProductVerticle</vertx.verticle>
+    <vertx.launcher>common.CustomLauncher</vertx.launcher>
   </properties>
 
   <dependencyManagement>
@@ -42,22 +43,6 @@
       <groupId>com.github.tsegismont</groupId>
       <artifactId>http-proxy-playground-service-commons</artifactId>
       <version>${project.parent.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-health-check</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
     </dependency>
   </dependencies>
 

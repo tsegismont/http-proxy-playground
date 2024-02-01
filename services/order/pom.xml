@@ -16,6 +16,7 @@
 
   <properties>
     <vertx.verticle>order.OrderVerticle</vertx.verticle>
+    <vertx.launcher>common.CustomLauncher</vertx.launcher>
   </properties>
 
   <dependencyManagement>
@@ -46,22 +47,6 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-auth-jwt</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-health-check</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
     </dependency>
   </dependencies>
 

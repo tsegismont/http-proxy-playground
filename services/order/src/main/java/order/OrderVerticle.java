@@ -16,6 +16,7 @@ import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
+import io.vertx.micrometer.PrometheusScrapingHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,8 @@ public class OrderVerticle extends AbstractVerticle {
         .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new XServedByHandler("order"))
         .handler(ResponseTimeHandler.create());
+
+      router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
       JWTAuthOptions authConfig = new JWTAuthOptions()
         .setKeyStore(new KeyStoreOptions()

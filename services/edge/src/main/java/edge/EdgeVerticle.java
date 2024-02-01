@@ -21,6 +21,7 @@ import io.vertx.ext.web.proxy.handler.ProxyHandler;
 import io.vertx.ext.web.sstore.cookie.CookieSessionStore;
 import io.vertx.httpproxy.*;
 import io.vertx.httpproxy.cache.CacheOptions;
+import io.vertx.micrometer.PrometheusScrapingHandler;
 
 public class EdgeVerticle extends AbstractVerticle {
 
@@ -46,6 +47,8 @@ public class EdgeVerticle extends AbstractVerticle {
         .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new XServedByHandler("edge"))
         .handler(ResponseTimeHandler.create());
+
+      router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
       router.get().handler(StaticHandler.create().setCachingEnabled(true));
 

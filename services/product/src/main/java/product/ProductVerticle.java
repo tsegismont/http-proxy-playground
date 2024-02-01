@@ -11,6 +11,7 @@ import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
+import io.vertx.micrometer.PrometheusScrapingHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +37,8 @@ public class ProductVerticle extends AbstractVerticle {
         .handler(LoggerHandler.create(LoggerFormat.TINY))
         .handler(new XServedByHandler("product"))
         .handler(ResponseTimeHandler.create());
+
+      router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
       router.get("/annoying-prefix/products").handler(this::productList);
       router.get("/annoying-prefix/product/:id")
