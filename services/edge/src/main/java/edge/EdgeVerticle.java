@@ -139,7 +139,7 @@ public class EdgeVerticle extends AbstractVerticle {
     httpProxy.origin(productServerPort, productServerHost);
     httpProxy.addInterceptor(new ProductPathInterceptor());
     httpProxy.addInterceptor(new ProductImageFieldInterceptor(vertx));
-    httpProxy.addInterceptor(new XServedByHeaderInterceptor());
+    httpProxy.addInterceptor(new HeadersInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
@@ -164,7 +164,7 @@ public class EdgeVerticle extends AbstractVerticle {
         return context.sendRequest();
       }
     });
-    httpProxy.addInterceptor(new XServedByHeaderInterceptor());
+    httpProxy.addInterceptor(new HeadersInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
@@ -183,7 +183,7 @@ public class EdgeVerticle extends AbstractVerticle {
         .putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return client.request(requestOptions);
     });
-    httpProxy.addInterceptor(new XServedByHeaderInterceptor());
+    httpProxy.addInterceptor(new HeadersInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
