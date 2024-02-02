@@ -28,8 +28,6 @@ import org.apache.logging.log4j.Logger;
 
 public class OrderVerticle extends AbstractVerticle {
 
-  private static final Logger LOG = LogManager.getLogger(OrderVerticle.class);
-
   private static final String CREATE_TABLE = """
     CREATE TABLE IF NOT EXISTS "order"
     (
