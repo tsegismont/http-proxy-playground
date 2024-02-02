@@ -70,6 +70,28 @@
           <debugSuspend>true</debugSuspend>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <configuration>
+          <from>
+            <image>eclipse-temurin:21</image>
+          </from>
+          <to>
+            <image>${project.parent.artifactId}/product</image>
+          </to>
+          <container>
+            <mainClass>${vertx.launcher}</mainClass>
+            <args>
+              <arg>run</arg>
+              <arg>${vertx.verticle}</arg>
+            </args>
+            <ports>
+              <port>8081</port>
+            </ports>
+          </container>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
