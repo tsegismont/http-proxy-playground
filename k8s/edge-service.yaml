@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: edge-service
+  namespace: default
+  labels:
+    k8s-app: edge-service
+spec:
+  type: NodePort
+  selector:
+    k8s-app: edge-server
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: 8443

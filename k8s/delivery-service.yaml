@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: delivery-service
+  namespace: default
+  labels:
+    k8s-app: delivery-service
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: delivery-server
+  ports:
+    - protocol: TCP
+      port: 8446
+      targetPort: 8446

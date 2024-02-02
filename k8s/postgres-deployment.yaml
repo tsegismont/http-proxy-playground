@@ -1,0 +1,25 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgres-server
+  namespace: default
+  labels:
+    k8s-app: postgres-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: postgres-server
+  template:
+    metadata:
+      name: postgres-server
+      labels:
+        k8s-app: postgres-server
+    spec:
+      containers:
+        - name: postgres-server
+          image: docker.io/postgres:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_PASSWORD
+              value: mysecretpassword

@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: product-service
+  namespace: default
+  labels:
+    k8s-app: product-service
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: product-server
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081

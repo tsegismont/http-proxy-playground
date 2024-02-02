@@ -1,0 +1,27 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: order-server
+  namespace: default
+  labels:
+    k8s-app: order-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: order-server
+  template:
+    metadata:
+      name: order-server
+      labels:
+        k8s-app: order-server
+    spec:
+      containers:
+        - name: order-server
+          image: http-proxy-playground/order:latest
+          imagePullPolicy: Never
+          env:
+            - name: POSTGRES_SERVER_HOST
+              value: "$(POSTGRES_SERVICE_SERVICE_HOST)"
+            - name: POSTGRES_SERVER_PORT
+              value: "$(POSTGRES_SERVICE_SERVICE_PORT)"

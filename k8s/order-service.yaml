@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: order-service
+  namespace: default
+  labels:
+    k8s-app: order-service
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: order-server
+  ports:
+    - protocol: TCP
+      port: 8445
+      targetPort: 8445

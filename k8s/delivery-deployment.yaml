@@ -1,0 +1,27 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: delivery-server
+  namespace: default
+  labels:
+    k8s-app: delivery-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: delivery-server
+  template:
+    metadata:
+      name: delivery-server
+      labels:
+        k8s-app: delivery-server
+    spec:
+      containers:
+        - name: delivery-server
+          image: http-proxy-playground/delivery:latest
+          imagePullPolicy: Never
+          env:
+            - name: POSTGRES_SERVER_HOST
+              value: "$(POSTGRES_SERVICE_SERVICE_HOST)"
+            - name: POSTGRES_SERVER_PORT
+              value: "$(POSTGRES_SERVICE_SERVICE_PORT)"

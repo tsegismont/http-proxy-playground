@@ -1,0 +1,22 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: product-server
+  namespace: default
+  labels:
+    k8s-app: product-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: product-server
+  template:
+    metadata:
+      name: product-server
+      labels:
+        k8s-app: product-server
+    spec:
+      containers:
+        - name: product-server
+          image: http-proxy-playground/product:latest
+          imagePullPolicy: Never

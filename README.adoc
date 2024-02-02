@@ -6,3 +6,17 @@
 ----
 docker run --name http-proxy-playground-postgres -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres
 ----
+
+== Deploying to Minikube
+
+[source,shell]
+----
+minikube start
+minikube addons enable metrics-server
+minikube addons enable dashboard
+minikube addons enable ingress
+eval $(minikube -p minikube docker-env)
+mvn clean install jib:dockerBuild
+kubectl apply -f k8s
+----
+
