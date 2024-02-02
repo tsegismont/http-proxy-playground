@@ -137,9 +137,9 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
     httpProxy.origin(productServerPort, productServerHost);
+    httpProxy.addInterceptor(new HeadersInterceptor());
     httpProxy.addInterceptor(new ProductPathInterceptor());
     httpProxy.addInterceptor(new ProductImageFieldInterceptor(vertx));
-    httpProxy.addInterceptor(new HeadersInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
@@ -156,6 +156,7 @@ public class EdgeVerticle extends AbstractVerticle {
         .setSsl(true);
       return client.request(requestOptions);
     });
+    httpProxy.addInterceptor(new HeadersInterceptor());
     httpProxy.addInterceptor(new ProxyInterceptor() {
       @Override
       public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
@@ -164,7 +165,6 @@ public class EdgeVerticle extends AbstractVerticle {
         return context.sendRequest();
       }
     });
-    httpProxy.addInterceptor(new HeadersInterceptor());
 
     return ProxyHandler.create(httpProxy);
   }
@@ -176,14 +176,20 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
-      String token = Vertx.currentContext().getLocal("token");
       RequestOptions requestOptions = new RequestOptions()
         .setServer(origin)
-        .setSsl(true)
-        .putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        .setSsl(true);
       return client.request(requestOptions);
     });
     httpProxy.addInterceptor(new HeadersInterceptor());
+    httpProxy.addInterceptor(new ProxyInterceptor() {
+      @Override
+      public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
+        String token = Vertx.currentContext().getLocal("token");
+        context.request().putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        return context.sendRequest();
+      }
+    });
 
     return ProxyHandler.create(httpProxy);
   }
