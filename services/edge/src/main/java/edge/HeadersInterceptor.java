@@ -7,11 +7,18 @@ import io.vertx.httpproxy.ProxyInterceptor;
 import io.vertx.httpproxy.ProxyRequest;
 import io.vertx.httpproxy.ProxyResponse;
 
-import static common.XServedByHandler.X_SERVED_BY;
-import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
-import static io.vertx.core.http.HttpHeaders.COOKIE;
+import java.util.Objects;
+import java.util.Set;
 
 class HeadersInterceptor implements ProxyInterceptor {
+
+  private final Set<CharSequence> requestHeaders;
+  private final Set<CharSequence> responseHeaders;
+
+  public HeadersInterceptor(Set<CharSequence> requestHeaders, Set<CharSequence> responseHeaders) {
+    this.requestHeaders = Objects.requireNonNull(requestHeaders);
+    this.responseHeaders = Objects.requireNonNull(responseHeaders);
+  }
 
   @Override
   public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
@@ -21,9 +28,7 @@ class HeadersInterceptor implements ProxyInterceptor {
   }
 
   private void filterRequest(MultiMap headers) {
-    headers
-      .remove(COOKIE)
-      .remove(AUTHORIZATION);
+    requestHeaders.forEach(headers::remove);
   }
 
   @Override
@@ -34,6 +39,6 @@ class HeadersInterceptor implements ProxyInterceptor {
   }
 
   private void filterResponse(MultiMap headers) {
-    headers.remove(X_SERVED_BY);
+    responseHeaders.forEach(headers::remove);
   }
 }

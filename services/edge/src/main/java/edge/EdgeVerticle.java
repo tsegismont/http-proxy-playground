@@ -24,6 +24,12 @@ import io.vertx.httpproxy.*;
 import io.vertx.httpproxy.cache.CacheOptions;
 import io.vertx.micrometer.PrometheusScrapingHandler;
 
+import java.util.Set;
+
+import static common.XServedByHandler.X_SERVED_BY;
+import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
+import static io.vertx.core.http.HttpHeaders.COOKIE;
+
 public class EdgeVerticle extends AbstractVerticle {
 
   private JsonObject identities;
@@ -137,7 +143,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
     httpProxy.origin(productServerPort, productServerHost);
-    httpProxy.addInterceptor(new HeadersInterceptor());
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of(X_SERVED_BY)));
     httpProxy.addInterceptor(new ProductPathInterceptor());
     httpProxy.addInterceptor(new ProductImageFieldInterceptor(vertx));
 
@@ -156,7 +162,7 @@ public class EdgeVerticle extends AbstractVerticle {
         .setSsl(true);
       return client.request(requestOptions);
     });
-    httpProxy.addInterceptor(new HeadersInterceptor());
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of(X_SERVED_BY)));
     httpProxy.addInterceptor(new ProxyInterceptor() {
       @Override
       public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
@@ -176,20 +182,14 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
+      String token = Vertx.currentContext().getLocal("token");
       RequestOptions requestOptions = new RequestOptions()
         .setServer(origin)
-        .setSsl(true);
+        .setSsl(true)
+        .putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return client.request(requestOptions);
     });
-    httpProxy.addInterceptor(new HeadersInterceptor());
-    httpProxy.addInterceptor(new ProxyInterceptor() {
-      @Override
-      public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
-        String token = Vertx.currentContext().getLocal("token");
-        context.request().putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-        return context.sendRequest();
-      }
-    });
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE), Set.of(X_SERVED_BY)));
 
     return ProxyHandler.create(httpProxy);
   }
