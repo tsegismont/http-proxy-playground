@@ -1,0 +1,8 @@
+= http-proxy-playground
+
+== Running Postgres Locally
+
+[source,shell]
+----
+docker run --name http-proxy-playground-postgres -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+----

@@ -20,95 +20,170 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
 import io.vertx.micrometer.PrometheusScrapingHandler;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.Tuple;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collector;
 
 import static io.vertx.ext.web.impl.Utils.canUpgradeToWebsocket;
 import static java.time.temporal.ChronoUnit.*;
+import static java.util.stream.Collectors.groupingBy;
 
 public class DeliveryVerticle extends AbstractVerticle {
 
+  private static final Logger LOG = LogManager.getLogger(DeliveryVerticle.class);
+
   private static final Duration PREPARATION = Duration.of(90, SECONDS);
   private static final Duration EXPIRATION = Duration.of(2, MINUTES);
+  private static final String CREATE_TABLE = """
+    CREATE TABLE IF NOT EXISTS delivery
+    (
+        username   VARCHAR,
+        created_on TIMESTAMP,
+        value      jsonb
+    )""";
+  private static final String CLEAN_DELIVERIES = "DELETE FROM delivery WHERE created_on < $1";
+  private static final String LOAD_DELIVERIES = """
+    SELECT username, value
+    FROM delivery
+    ORDER BY created_on DESC""";
+  private static final String INSERT_DELIVERY = """
+    INSERT INTO delivery (username, created_on, value)
+    VALUES ($1, $2, $3)""";
 
-  private final List<JsonObject> deliveries = new ArrayList<>();
-  private final Set<ServerWebSocket> sockets = new HashSet<>();
+  private final Map<ServerWebSocket, String> subscriptions = new HashMap<>();
+  private Pool pool;
 
   @Override
   public void start(Promise<Void> startPromise) {
-    vertx.setPeriodic(2000, l -> {
-      Instant now = Instant.now();
-      cleanDeliveries(now);
-      pushUpdates(now);
-    });
-
     ConfigRetriever retriever = ConfigRetriever.create(vertx);
     retriever.getConfig().compose(conf -> {
 
-      Router router = Router.router(vertx);
+      String dbHost = conf.getString("dbHost", "localhost");
+      Integer dbPort = conf.getInteger("dbPort", 5432);
+      String dbName = conf.getString("dbName", "postgres");
+      String dbUser = conf.getString("dbUser", "postgres");
+      String dbPassword = conf.getString("dbPassword", "mysecretpassword");
 
-      router.route()
-        .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new XServedByHandler("delivery"))
-        .handler(ResponseTimeHandler.create());
+      PgConnectOptions pgConnectOptions = new PgConnectOptions()
+        .setHost(dbHost)
+        .setPort(dbPort)
+        .setDatabase(dbName)
+        .setUser(dbUser)
+        .setPassword(dbPassword);
 
-      router.route("/metrics").handler(PrometheusScrapingHandler.create());
+      pool = Pool.pool(vertx, pgConnectOptions, new PoolOptions());
 
-      JWTAuthOptions authConfig = new JWTAuthOptions()
-        .setKeyStore(new KeyStoreOptions()
-          .setType("PKCS12")
-          .setPath("http-proxy-playground.p12")
-          .setPassword("foobar"));
+      return pool.query(CREATE_TABLE).execute().compose(v -> {
 
-      JWTAuth authProvider = JWTAuth.create(vertx, authConfig);
+        vertx.setPeriodic(2000, l -> {
+          cleanDeliveriesAndPushUpdates();
+        });
 
-      router.route("/delivery*").handler(JWTAuthHandler.create(authProvider));
+        Router router = Router.router(vertx);
 
-      router.post("/delivery/add")
-        .handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
-        .handler(this::deliveryAdd);
-      router.route("/delivery/updates").handler((ProtocolUpgradeHandler) this::deliveryUpdates);
+        router.route()
+          .handler(LoggerHandler.create(LoggerFormat.TINY))
+          .handler(new XServedByHandler("delivery"))
+          .handler(ResponseTimeHandler.create());
 
-      router.get("/health*").handler(HealthCheckHandler.create(vertx));
+        router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
-      router.route().failureHandler(ErrorHandler.create(vertx));
+        JWTAuthOptions authConfig = new JWTAuthOptions()
+          .setKeyStore(new KeyStoreOptions()
+            .setType("PKCS12")
+            .setPath("http-proxy-playground.p12")
+            .setPassword("foobar"));
 
-      String serverKeyPath = conf.getString("serverKeyPath");
-      String serverCertPath = conf.getString("serverCertPath");
-      KeyCertOptions keyCertOptions;
-      if (serverKeyPath != null && serverCertPath != null) {
-        keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
-      } else {
-        keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
-      }
+        JWTAuth authProvider = JWTAuth.create(vertx, authConfig);
 
-      String serverHost = conf.getString("serverHost", "0.0.0.0");
-      Integer serverPort = conf.getInteger("serverPort", 8446);
+        router.route("/delivery*").handler(JWTAuthHandler.create(authProvider));
 
-      HttpServerOptions options = new HttpServerOptions()
-        .setHost(serverHost)
-        .setPort(serverPort)
-        .setUseAlpn(true)
-        .setSsl(true)
-        .setKeyCertOptions(keyCertOptions)
-        .setCompressionSupported(true);
+        router.post("/delivery/add")
+          .handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
+          .handler(this::deliveryAdd);
+        router.route("/delivery/updates").handler((ProtocolUpgradeHandler) this::deliveryUpdates);
 
-      return vertx.createHttpServer(options)
-        .requestHandler(router)
-        .listen()
-        .<Void>mapEmpty();
+        router.get("/health*").handler(HealthCheckHandler.create(vertx));
+
+        router.route().failureHandler(ErrorHandler.create(vertx));
+
+        String serverKeyPath = conf.getString("serverKeyPath");
+        String serverCertPath = conf.getString("serverCertPath");
+        KeyCertOptions keyCertOptions;
+        if (serverKeyPath != null && serverCertPath != null) {
+          keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
+        } else {
+          keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
+        }
+
+        String serverHost = conf.getString("serverHost", "0.0.0.0");
+        Integer serverPort = conf.getInteger("serverPort", 8446);
+
+        HttpServerOptions options = new HttpServerOptions()
+          .setHost(serverHost)
+          .setPort(serverPort)
+          .setUseAlpn(true)
+          .setSsl(true)
+          .setKeyCertOptions(keyCertOptions)
+          .setCompressionSupported(true);
+
+        return vertx.createHttpServer(options)
+          .requestHandler(router)
+          .listen()
+          .<Void>mapEmpty();
+
+      });
 
     }).onComplete(startPromise);
   }
 
-  private void cleanDeliveries(Instant now) {
-    Instant limit = now.minus(EXPIRATION);
-    deliveries.removeIf(delivery -> delivery.getInstant("createdOn").plus(PREPARATION).isBefore(limit));
+  private void cleanDeliveriesAndPushUpdates() {
+    Instant now = Instant.now();
+    Instant limit = now.minus(EXPIRATION).minus(PREPARATION);
+
+    pool.preparedQuery(CLEAN_DELIVERIES).execute(Tuple.of(limit.atOffset(ZoneOffset.UTC).toLocalDateTime())).compose(v -> {
+
+      Collector<Row, ?, Map<String, List<Row>>> collector = groupingBy(row -> row.getString("username"));
+
+      return pool.query(LOAD_DELIVERIES).collecting(collector).execute().onSuccess(res -> {
+        if (res.size() > 0) {
+          Map<String, List<Row>> map = res.value();
+
+          for (Map.Entry<ServerWebSocket, String> subscription : subscriptions.entrySet()) {
+
+            List<Row> deliveries = map.get(subscription.getValue());
+            if (deliveries != null) {
+              List<JsonObject> message = new ArrayList<>(deliveries.size());
+              for (Row row : deliveries) {
+                JsonObject delivery = row.getJsonObject("value");
+
+                delivery.remove("order");
+
+                long elapsed = delivery.getInstant("createdOn").until(now, MILLIS);
+                long completion = elapsed >= PREPARATION.toMillis() ? 100 : Math.ceilDiv(100 * elapsed, PREPARATION.toMillis());
+                delivery.put("completion", completion);
+
+                message.add(delivery);
+              }
+              subscription.getKey().writeTextMessage(new JsonArray(message).encode());
+            }
+          }
+        }
+      });
+    }).onFailure(throwable -> LOG.error("Failure while executing periodic task", throwable));
   }
 
   private void deliveryAdd(RoutingContext rc) {
@@ -130,11 +205,12 @@ public class DeliveryVerticle extends AbstractVerticle {
       return;
     }
 
-    delivery.put("createdOn", Instant.now());
+    Instant now = Instant.now();
+    delivery.put("createdOn", now);
 
-    deliveries.add(delivery);
-
-    rc.response().end();
+    pool.preparedQuery(INSERT_DELIVERY)
+      .execute(Tuple.of(extractUsername(rc), now.atOffset(ZoneOffset.UTC).toLocalDateTime(), delivery))
+      .onComplete(v -> rc.response().end(), rc::fail);
   }
 
   private void deliveryUpdates(RoutingContext rc) {
@@ -143,28 +219,15 @@ public class DeliveryVerticle extends AbstractVerticle {
       socketFuture
         .onFailure(rc::fail)
         .onSuccess(socket -> {
-          socket.closeHandler(v -> sockets.remove(socket));
-          sockets.add(socket);
+          socket.closeHandler(v -> subscriptions.remove(socket));
+          subscriptions.put(socket, extractUsername(rc));
         });
     } else {
       rc.next();
     }
   }
 
-  private void pushUpdates(Instant now) {
-    List<JsonObject> message = new ArrayList<>(deliveries.size());
-    for (JsonObject delivery : deliveries) {
-
-      delivery.remove("order");
-
-      long elapsed = delivery.getInstant("createdOn").until(now, MILLIS);
-      long completion = elapsed >= PREPARATION.toMillis() ? 100 : Math.ceilDiv(100 * elapsed, PREPARATION.toMillis());
-      delivery.put("completion", completion);
-      message.add(delivery);
-    }
-
-    for (ServerWebSocket socket : sockets) {
-      socket.writeTextMessage(new JsonArray(message).encode());
-    }
+  private static String extractUsername(RoutingContext rc) {
+    return rc.user().principal().getJsonObject("sub").getString("username");
   }
 }
