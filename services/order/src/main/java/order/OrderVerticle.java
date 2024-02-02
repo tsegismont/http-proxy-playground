@@ -1,7 +1,6 @@
 package order;
 
 import common.XServedByHandler;
-import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -9,7 +8,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.auth.KeyStoreOptions;
 import io.vertx.ext.auth.jwt.JWTAuth;
@@ -23,8 +21,8 @@ import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.Tuple;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static common.EnvUtil.*;
 
 public class OrderVerticle extends AbstractVerticle {
 
@@ -53,86 +51,68 @@ public class OrderVerticle extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> startPromise) {
-    ConfigRetriever retriever = ConfigRetriever.create(vertx);
-    retriever.getConfig().compose(conf -> {
+    PgConnectOptions pgConnectOptions = new PgConnectOptions()
+      .setHost(postgresServerHost())
+      .setPort(postgresServerPort())
+      .setDatabase(postgresServerDatabase())
+      .setUser(postgresServerUser())
+      .setPassword(postgresServerPassword());
 
-      String dbHost = conf.getString("dbHost", "localhost");
-      Integer dbPort = conf.getInteger("dbPort", 5432);
-      String dbName = conf.getString("dbName", "postgres");
-      String dbUser = conf.getString("dbUser", "postgres");
-      String dbPassword = conf.getString("dbPassword", "mysecretpassword");
+    pool = Pool.pool(vertx, pgConnectOptions, new PoolOptions());
 
-      PgConnectOptions pgConnectOptions = new PgConnectOptions()
-        .setHost(dbHost)
-        .setPort(dbPort)
-        .setDatabase(dbName)
-        .setUser(dbUser)
-        .setPassword(dbPassword);
+    pool.query(CREATE_TABLE).execute().compose(v -> {
 
-      pool = Pool.pool(vertx, pgConnectOptions, new PoolOptions());
+      Router router = Router.router(vertx);
 
-      return pool.query(CREATE_TABLE).execute().compose(v -> {
+      router.route()
+        .handler(LoggerHandler.create(LoggerFormat.TINY))
+        .handler(new XServedByHandler("order"))
+        .handler(ResponseTimeHandler.create());
 
-        Router router = Router.router(vertx);
+      router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
-        router.route()
-          .handler(LoggerHandler.create(LoggerFormat.TINY))
-          .handler(new XServedByHandler("order"))
-          .handler(ResponseTimeHandler.create());
+      JWTAuthOptions authConfig = new JWTAuthOptions()
+        .setKeyStore(new KeyStoreOptions()
+          .setType("PKCS12")
+          .setPath("http-proxy-playground.p12")
+          .setPassword("foobar"));
 
-        router.route("/metrics").handler(PrometheusScrapingHandler.create());
+      JWTAuth authProvider = JWTAuth.create(vertx, authConfig);
 
-        JWTAuthOptions authConfig = new JWTAuthOptions()
-          .setKeyStore(new KeyStoreOptions()
-            .setType("PKCS12")
-            .setPath("http-proxy-playground.p12")
-            .setPassword("foobar"));
+      router.route("/order*").handler(JWTAuthHandler.create(authProvider));
 
-        JWTAuth authProvider = JWTAuth.create(vertx, authConfig);
+      BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
 
-        router.route("/order*").handler(JWTAuthHandler.create(authProvider));
+      router.get("/order").handler(this::orderList);
+      router.post("/order/add")
+        .handler(bodyHandler)
+        .handler(this::orderAdd);
+      router.post("/order/clear").handler(this::orderClear);
+      router.post("/order/checkout")
+        .handler(bodyHandler)
+        .handler(this::orderCheckout);
 
-        BodyHandler bodyHandler = BodyHandler.create().setDeleteUploadedFilesOnEnd(true);
+      router.get("/health*").handler(HealthCheckHandler.create(vertx));
 
-        router.get("/order").handler(this::orderList);
-        router.post("/order/add")
-          .handler(bodyHandler)
-          .handler(this::orderAdd);
-        router.post("/order/clear").handler(this::orderClear);
-        router.post("/order/checkout")
-          .handler(bodyHandler)
-          .handler(this::orderCheckout);
+      router.route().failureHandler(ErrorHandler.create(vertx));
 
-        router.get("/health*").handler(HealthCheckHandler.create(vertx));
+      KeyCertOptions keyCertOptions = new PfxOptions()
+        .setPath("http-proxy-playground.p12")
+        .setPassword("foobar")
+        .setAlias("http-proxy-playground");
 
-        router.route().failureHandler(ErrorHandler.create(vertx));
+      HttpServerOptions options = new HttpServerOptions()
+        .setHost(serverHost())
+        .setPort(serverPort(8445))
+        .setUseAlpn(false)
+        .setSsl(true)
+        .setKeyCertOptions(keyCertOptions)
+        .setCompressionSupported(true);
 
-        String serverHost = conf.getString("serverHost", "0.0.0.0");
-        Integer serverPort = conf.getInteger("serverPort", 8445);
-
-        String serverKeyPath = conf.getString("serverKeyPath");
-        String serverCertPath = conf.getString("serverCertPath");
-        KeyCertOptions keyCertOptions;
-        if (serverKeyPath != null && serverCertPath != null) {
-          keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
-        } else {
-          keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
-        }
-
-        HttpServerOptions options = new HttpServerOptions()
-          .setHost(serverHost)
-          .setPort(serverPort)
-          .setUseAlpn(false)
-          .setSsl(true)
-          .setKeyCertOptions(keyCertOptions)
-          .setCompressionSupported(true);
-
-        return vertx.createHttpServer(options)
-          .requestHandler(router)
-          .listen()
-          .<Void>mapEmpty();
-
-      });
+      return vertx.createHttpServer(options)
+        .requestHandler(router)
+        .listen()
+        .<Void>mapEmpty();
 
     }).onComplete(startPromise);
   }

@@ -1,7 +1,6 @@
 package product;
 
 import common.XServedByHandler;
-import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
@@ -17,6 +16,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static common.EnvUtil.serverHost;
+import static common.EnvUtil.serverPort;
+
 public class ProductVerticle extends AbstractVerticle {
 
   private final Map<Integer, JsonObject> products = new HashMap<>();
@@ -25,46 +27,39 @@ public class ProductVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) {
     loadData();
 
-    ConfigRetriever retriever = ConfigRetriever.create(vertx);
-    retriever.getConfig().compose(conf -> {
+    Router router = Router.router(vertx);
 
-      String serverHost = conf.getString("serverHost", "0.0.0.0");
-      Integer serverPort = conf.getInteger("serverPort", 8081);
+    router.route()
+      .handler(LoggerHandler.create(LoggerFormat.TINY))
+      .handler(new XServedByHandler("product"))
+      .handler(ResponseTimeHandler.create());
 
-      Router router = Router.router(vertx);
+    router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
-      router.route()
-        .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new XServedByHandler("product"))
-        .handler(ResponseTimeHandler.create());
+    router.get("/annoying-prefix/products").handler(this::productList);
+    router.get("/annoying-prefix/product/:id")
+      .handler(this::extractId)
+      .handler(this::product);
+    router.get("/annoying-prefix/product/:id/image")
+      .handler(this::extractId)
+      .handler(this::productImage);
 
-      router.route("/metrics").handler(PrometheusScrapingHandler.create());
+    router.get("/static/*").handler(StaticHandler.create().setCachingEnabled(true));
 
-      router.get("/annoying-prefix/products").handler(this::productList);
-      router.get("/annoying-prefix/product/:id")
-        .handler(this::extractId)
-        .handler(this::product);
-      router.get("/annoying-prefix/product/:id/image")
-        .handler(this::extractId)
-        .handler(this::productImage);
+    router.get("/health*").handler(HealthCheckHandler.create(vertx));
 
-      router.get("/static/*").handler(StaticHandler.create().setCachingEnabled(true));
+    router.route().failureHandler(ErrorHandler.create(vertx));
 
-      router.get("/health*").handler(HealthCheckHandler.create(vertx));
+    HttpServerOptions options = new HttpServerOptions()
+      .setHost(serverHost())
+      .setPort(serverPort(8081))
+      .setCompressionSupported(true);
 
-      router.route().failureHandler(ErrorHandler.create(vertx));
-
-      HttpServerOptions options = new HttpServerOptions()
-        .setHost(serverHost)
-        .setPort(serverPort)
-        .setCompressionSupported(true);
-
-      return vertx.createHttpServer(options)
-        .requestHandler(router)
-        .listen()
-        .<Void>mapEmpty();
-
-    }).onComplete(startPromise);
+    vertx.createHttpServer(options)
+      .requestHandler(router)
+      .listen()
+      .<Void>mapEmpty()
+      .onComplete(startPromise);
   }
 
   private void loadData() {

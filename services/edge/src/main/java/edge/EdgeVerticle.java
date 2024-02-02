@@ -1,7 +1,6 @@
 package edge;
 
 import common.XServedByHandler;
-import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -9,7 +8,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.tracing.TracingPolicy;
@@ -26,6 +24,7 @@ import io.vertx.micrometer.PrometheusScrapingHandler;
 
 import java.util.Set;
 
+import static common.EnvUtil.*;
 import static common.XServedByHandler.X_SERVED_BY;
 import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
 import static io.vertx.core.http.HttpHeaders.COOKIE;
@@ -45,83 +44,73 @@ public class EdgeVerticle extends AbstractVerticle {
 
     HttpClient httpClient = vertx.createHttpClient(clientOptions);
 
-    ConfigRetriever retriever = ConfigRetriever.create(vertx);
-    retriever.getConfig().compose(conf -> {
+    Router router = Router.router(vertx);
 
-      Router router = Router.router(vertx);
+    router.route()
+      .handler(LoggerHandler.create(LoggerFormat.TINY))
+      .handler(new XServedByHandler("edge"))
+      .handler(ResponseTimeHandler.create());
 
-      router.route()
-        .handler(LoggerHandler.create(LoggerFormat.TINY))
-        .handler(new XServedByHandler("edge"))
-        .handler(ResponseTimeHandler.create());
+    router.route("/metrics").handler(PrometheusScrapingHandler.create());
 
-      router.route("/metrics").handler(PrometheusScrapingHandler.create());
+    router.get().handler(StaticHandler.create().setCachingEnabled(true));
 
-      router.get().handler(StaticHandler.create().setCachingEnabled(true));
+    router.route().handler(SessionHandler.create(CookieSessionStore.create(vertx, "foobar")));
 
-      router.route().handler(SessionHandler.create(CookieSessionStore.create(vertx, "foobar")));
+    BasicAuthHandler basicAuthHandler = BasicAuthHandler.create(PropertyFileAuthentication.create(vertx, "users.properties"));
+    TokenMaintenanceHandler tokenMaintenanceHandler = new TokenMaintenanceHandler(vertx);
 
-      BasicAuthHandler basicAuthHandler = BasicAuthHandler.create(PropertyFileAuthentication.create(vertx, "users.properties"));
-      TokenMaintenanceHandler tokenMaintenanceHandler = new TokenMaintenanceHandler(vertx);
+    router.get("/identity")
+      .handler(basicAuthHandler)
+      .handler(tokenMaintenanceHandler)
+      .handler(this::identity);
 
-      router.get("/identity")
-        .handler(basicAuthHandler)
-        .handler(tokenMaintenanceHandler)
-        .handler(this::identity);
+    router.get("/order/checkout")
+      .handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
+      .handler(basicAuthHandler)
+      .handler(tokenMaintenanceHandler)
+      .handler(new OrderCheckoutHandler(httpClient));
 
-      router.get("/order/checkout")
-        .handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
-        .handler(basicAuthHandler)
-        .handler(tokenMaintenanceHandler)
-        .handler(new OrderCheckoutHandler(httpClient, conf));
+    ProxyHandler productProxyHandler = productProxyHandler(httpClient);
+    router.route("/product*")
+      .handler(basicAuthHandler)
+      .handler(productProxyHandler);
 
-      ProxyHandler productProxyHandler = productProxyHandler(conf, httpClient);
-      router.route("/product*")
-        .handler(basicAuthHandler)
-        .handler(productProxyHandler);
+    ProxyHandler orderProxyHandler = orderProxyHandler(httpClient);
+    router.route("/order*")
+      .handler(basicAuthHandler)
+      .handler(tokenMaintenanceHandler)
+      .handler(orderProxyHandler);
 
-      ProxyHandler orderProxyHandler = orderProxyHandler(conf, httpClient);
-      router.route("/order*")
-        .handler(basicAuthHandler)
-        .handler(tokenMaintenanceHandler)
-        .handler(orderProxyHandler);
+    ProxyHandler deliveryProxyHandler = deliveryProxyHandler(httpClient);
+    router.route("/delivery*")
+      .handler(basicAuthHandler)
+      .handler(tokenMaintenanceHandler)
+      .handler(deliveryProxyHandler);
 
-      ProxyHandler deliveryProxyHandler = deliveryProxyHandler(conf, httpClient);
-      router.route("/delivery*")
-        .handler(basicAuthHandler)
-        .handler(tokenMaintenanceHandler)
-        .handler(deliveryProxyHandler);
+    router.get("/health*").handler(HealthCheckHandler.create(vertx));
 
-      router.get("/health*").handler(HealthCheckHandler.create(vertx));
+    router.route().failureHandler(ErrorHandler.create(vertx));
 
-      router.route().failureHandler(ErrorHandler.create(vertx));
+    KeyCertOptions keyCertOptions = new PfxOptions()
+      .setPath("http-proxy-playground.p12")
+      .setPassword("foobar")
+      .setAlias("http-proxy-playground");
 
-      String serverHost = conf.getString("serverHost", "0.0.0.0");
-      Integer serverPort = conf.getInteger("serverPort", 8443);
-      String serverKeyPath = conf.getString("serverKeyPath");
-      String serverCertPath = conf.getString("serverCertPath");
-      KeyCertOptions keyCertOptions;
-      if (serverKeyPath != null && serverCertPath != null) {
-        keyCertOptions = new PemKeyCertOptions().setKeyPath(serverKeyPath).setCertPath(serverCertPath);
-      } else {
-        keyCertOptions = new PfxOptions().setPath("http-proxy-playground.p12").setPassword("foobar").setAlias("http-proxy-playground");
-      }
+    HttpServerOptions options = new HttpServerOptions()
+      .setHost(serverHost())
+      .setPort(serverPort(8443))
+      .setUseAlpn(true)
+      .setSsl(true)
+      .setKeyCertOptions(keyCertOptions)
+      .setCompressionSupported(true)
+      .setTracingPolicy(TracingPolicy.ALWAYS);
 
-      HttpServerOptions options = new HttpServerOptions()
-        .setHost(serverHost)
-        .setPort(serverPort)
-        .setUseAlpn(true)
-        .setSsl(true)
-        .setKeyCertOptions(keyCertOptions)
-        .setCompressionSupported(true)
-        .setTracingPolicy(TracingPolicy.ALWAYS);
-
-      return vertx.createHttpServer(options)
-        .requestHandler(router)
-        .listen()
-        .<Void>mapEmpty();
-
-    }).onComplete(startPromise);
+    vertx.createHttpServer(options)
+      .requestHandler(router)
+      .listen()
+      .<Void>mapEmpty()
+      .onComplete(startPromise);
   }
 
   private void identity(RoutingContext rc) {
@@ -130,10 +119,7 @@ public class EdgeVerticle extends AbstractVerticle {
     rc.json(reply);
   }
 
-  private ProxyHandler productProxyHandler(JsonObject conf, HttpClient httpClient) {
-    String productServerHost = conf.getString("productServerHost", "127.0.0.1");
-    Integer productServerPort = conf.getInteger("productServerPort", 8081);
-
+  private ProxyHandler productProxyHandler(HttpClient httpClient) {
     CacheOptions cacheOptions = new CacheOptions()
       .setMaxSize(512);
 
@@ -142,7 +128,7 @@ public class EdgeVerticle extends AbstractVerticle {
       .setSupportWebSocket(false);
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
-    httpProxy.origin(productServerPort, productServerHost);
+    httpProxy.origin(productServerPort(), productServerHost());
     httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of(X_SERVED_BY)));
     httpProxy.addInterceptor(new ProductPathInterceptor());
     httpProxy.addInterceptor(new ProductImageFieldInterceptor(vertx));
@@ -150,10 +136,8 @@ public class EdgeVerticle extends AbstractVerticle {
     return ProxyHandler.create(httpProxy);
   }
 
-  private ProxyHandler orderProxyHandler(JsonObject conf, HttpClient httpClient) {
-    String orderServerHost = conf.getString("orderServerHost", "127.0.0.1");
-    Integer orderServerPort = conf.getInteger("orderServerPort", 8445);
-    SocketAddress origin = SocketAddress.inetSocketAddress(orderServerPort, orderServerHost);
+  private ProxyHandler orderProxyHandler(HttpClient httpClient) {
+    SocketAddress origin = SocketAddress.inetSocketAddress(orderServerPort(), orderServerHost());
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(false), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
@@ -175,10 +159,8 @@ public class EdgeVerticle extends AbstractVerticle {
     return ProxyHandler.create(httpProxy);
   }
 
-  private ProxyHandler deliveryProxyHandler(JsonObject conf, HttpClient httpClient) {
-    String deliveryServerHost = conf.getString("deliveryServerHost", "127.0.0.1");
-    Integer deliveryServerPort = conf.getInteger("deliveryServerPort", 8446);
-    SocketAddress origin = SocketAddress.inetSocketAddress(deliveryServerPort, deliveryServerHost);
+  private ProxyHandler deliveryProxyHandler(HttpClient httpClient) {
+    SocketAddress origin = SocketAddress.inetSocketAddress(deliveryServerPort(), deliveryServerHost());
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {

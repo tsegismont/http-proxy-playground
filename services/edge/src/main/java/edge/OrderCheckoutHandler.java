@@ -9,27 +9,23 @@ import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 
+import static common.EnvUtil.*;
+
 class OrderCheckoutHandler implements Handler<RoutingContext> {
 
   private final HttpRequest<JsonObject> orderRequest;
   private final HttpRequest<JsonObject> deliveryRequest;
 
-  public OrderCheckoutHandler(HttpClient httpClient, JsonObject conf) {
+  public OrderCheckoutHandler(HttpClient httpClient) {
     WebClient webClient = WebClient.wrap(httpClient);
 
-    String orderServerHost = conf.getString("orderServerHost", "127.0.0.1");
-    int orderServerPort = conf.getInteger("orderServerPort", 8445);
-
-    orderRequest = webClient.post(orderServerPort, orderServerHost, "/order/checkout")
+    orderRequest = webClient.post(orderServerPort(), orderServerHost(), "/order/checkout")
       .ssl(true)
       .expect(ResponsePredicates.STATUS_OK)
       .expect(ResponsePredicates.CONTENT_JSON)
       .as(BodyCodec.jsonObject());
 
-    String deliveryServerHost = conf.getString("deliveryServerHost", "127.0.0.1");
-    int deliveryServerPort = conf.getInteger("deliveryServerPort", 8446);
-
-    deliveryRequest = webClient.post(deliveryServerPort, deliveryServerHost, "/delivery/add")
+    deliveryRequest = webClient.post(deliveryServerPort(), deliveryServerHost(), "/delivery/add")
       .ssl(true)
       .expect(ResponsePredicates.STATUS_OK)
       .as(BodyCodec.jsonObject());
