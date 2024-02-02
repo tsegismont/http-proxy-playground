@@ -80,6 +80,7 @@
         </executions>
         <configuration>
           <redeploy>true</redeploy>
+          <debugSuspend>true</debugSuspend>
         </configuration>
       </plugin>
     </plugins>
