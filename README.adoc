@@ -18,5 +18,6 @@ minikube addons enable ingress
 eval $(minikube -p minikube docker-env)
 mvn clean install jib:dockerBuild
 kubectl apply -f k8s
+xdg-open $(minikube service edge-service --url --https)
 ----
 
