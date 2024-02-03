@@ -19,8 +19,10 @@ spec:
       containers:
         - name: delivery-server
           image: http-proxy-playground/delivery:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.net.preferIPv4Stack=true -Dvertx.disableDnsResolver=true"
             - name: POSTGRES_SERVER_HOST
               value: "$(POSTGRES_SERVICE_SERVICE_HOST)"
             - name: POSTGRES_SERVER_PORT

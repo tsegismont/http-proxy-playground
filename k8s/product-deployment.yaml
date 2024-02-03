@@ -19,4 +19,7 @@ spec:
       containers:
         - name: product-server
           image: http-proxy-playground/product:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.net.preferIPv4Stack=true -Dvertx.disableDnsResolver=true"

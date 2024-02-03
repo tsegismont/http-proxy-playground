@@ -11,5 +11,5 @@ spec:
     k8s-app: delivery-server
   ports:
     - protocol: TCP
-      port: 8446
-      targetPort: 8446
+      port: 8443
+      targetPort: 8443

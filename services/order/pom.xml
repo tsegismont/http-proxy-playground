@@ -94,13 +94,16 @@
             <image>${project.parent.artifactId}/order</image>
           </to>
           <container>
+            <environment>
+              <SERVER_PORT>8443</SERVER_PORT>
+            </environment>
             <mainClass>${vertx.launcher}</mainClass>
             <args>
               <arg>run</arg>
               <arg>${vertx.verticle}</arg>
             </args>
             <ports>
-              <port>8445</port>
+              <port>8443</port>
             </ports>
           </container>
         </configuration>

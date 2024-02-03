@@ -11,5 +11,5 @@ spec:
     k8s-app: order-server
   ports:
     - protocol: TCP
-      port: 8445
-      targetPort: 8445
+      port: 8443
+      targetPort: 8443

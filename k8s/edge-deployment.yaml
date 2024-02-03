@@ -19,8 +19,10 @@ spec:
       containers:
         - name: edge-server
           image: http-proxy-playground/edge:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.net.preferIPv4Stack=true -Dvertx.disableDnsResolver=true"
             - name: PRODUCT_SERVER_HOST
               value: "$(PRODUCT_SERVICE_SERVICE_HOST)"
             - name: PRODUCT_SERVER_PORT
