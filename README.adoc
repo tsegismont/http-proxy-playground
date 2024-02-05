@@ -9,15 +9,24 @@ docker run --name http-proxy-playground-postgres -p 5432:5432 -e POSTGRES_PASSWO
 
 == Deploying to Minikube
 
+Assuming `minikube` and `kubectl` are installed:
+
 [source,shell]
 ----
 minikube start
-minikube addons enable metrics-server
 minikube addons enable dashboard
-minikube addons enable ingress
+minikube addons enable metrics-server
 eval $(minikube -p minikube docker-env)
 mvn clean install jib:dockerBuild
 kubectl apply -f k8s
+----
+
+When the service is ready:
+
+[source,shell]
+----
 xdg-open $(minikube service edge-service --url --https)
 ----
+
+
 
