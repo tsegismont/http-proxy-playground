@@ -12,10 +12,10 @@ import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.auth.KeyStoreOptions;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
-import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
+import io.vertx.ext.web.healthchecks.HealthCheckHandler;
 import io.vertx.micrometer.PrometheusScrapingHandler;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.Pool;
@@ -216,6 +216,6 @@ public class OrderVerticle extends AbstractVerticle {
   }
 
   private static String extractUsername(RoutingContext rc) {
-    return rc.user().principal().getJsonObject("sub").getString("username");
+    return rc.user().get().principal().getJsonObject("sub").getString("username");
   }
 }

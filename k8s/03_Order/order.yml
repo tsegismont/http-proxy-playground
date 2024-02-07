@@ -6,7 +6,7 @@ metadata:
   labels:
     k8s-app: order-server
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       k8s-app: order-server
@@ -27,3 +27,19 @@ spec:
               value: "$(POSTGRES_SERVICE_SERVICE_HOST)"
             - name: POSTGRES_SERVER_PORT
               value: "$(POSTGRES_SERVICE_SERVICE_PORT)"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: order-service
+  namespace: default
+  labels:
+    k8s-app: order-service
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: order-server
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: 8443

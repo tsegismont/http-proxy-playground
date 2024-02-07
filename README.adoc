@@ -18,7 +18,7 @@ minikube addons enable dashboard
 minikube addons enable metrics-server
 eval $(minikube -p minikube docker-env)
 mvn clean install jib:dockerBuild
-kubectl apply -f k8s
+kubectl apply -R -f k8s
 ----
 
 When the service is ready:
@@ -28,5 +28,9 @@ When the service is ready:
 xdg-open $(minikube service edge-service --url --https)
 ----
 
+== Query endpoints within a container
 
-
+[source,shell]
+----
+curl -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" "https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT_HTTPS}/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/endpoints"
+----

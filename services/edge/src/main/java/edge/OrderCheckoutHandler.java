@@ -3,13 +3,16 @@ package edge;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.RequestOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 
-import static common.EnvUtil.*;
+import static common.EnvUtil.DELIVERY_SERVICE;
+import static common.EnvUtil.ORDER_SERVICE;
 
 class OrderCheckoutHandler implements Handler<RoutingContext> {
 
@@ -19,13 +22,13 @@ class OrderCheckoutHandler implements Handler<RoutingContext> {
   public OrderCheckoutHandler(HttpClient httpClient) {
     WebClient webClient = WebClient.wrap(httpClient);
 
-    orderRequest = webClient.post(orderServerPort(), orderServerHost(), "/order/checkout")
+    orderRequest = webClient.request(HttpMethod.POST, new RequestOptions().setServer(ORDER_SERVICE).setURI("/order/checkout"))
       .ssl(true)
       .expect(ResponsePredicates.STATUS_OK)
       .expect(ResponsePredicates.CONTENT_JSON)
       .as(BodyCodec.jsonObject());
 
-    deliveryRequest = webClient.post(deliveryServerPort(), deliveryServerHost(), "/delivery/add")
+    deliveryRequest = webClient.request(HttpMethod.POST, new RequestOptions().setServer(DELIVERY_SERVICE).setURI("/delivery/add"))
       .ssl(true)
       .expect(ResponsePredicates.STATUS_OK)
       .as(BodyCodec.jsonObject());

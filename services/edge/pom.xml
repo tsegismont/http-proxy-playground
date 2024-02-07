@@ -36,7 +36,7 @@
       </dependency>
       <dependency>
         <groupId>io.vertx</groupId>
-        <artifactId>vertx-stack-depchain</artifactId>
+        <artifactId>vertx-dependencies</artifactId>
         <version>${vertx.version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -69,6 +69,10 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-service-resolver</artifactId>
     </dependency>
   </dependencies>
 
@@ -103,7 +107,6 @@
           <container>
             <mainClass>${vertx.launcher}</mainClass>
             <args>
-              <arg>run</arg>
               <arg>${vertx.verticle}</arg>
             </args>
             <ports>

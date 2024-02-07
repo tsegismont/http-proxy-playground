@@ -23,3 +23,19 @@ spec:
           env:
             - name: POSTGRES_PASSWORD
               value: mysecretpassword
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres-service
+  namespace: default
+  labels:
+    k8s-app: postgres-service
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: postgres-server
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

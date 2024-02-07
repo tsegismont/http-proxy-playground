@@ -1,0 +1,41 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: edge-server
+  namespace: default
+  labels:
+    k8s-app: edge-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: edge-server
+  template:
+    metadata:
+      name: edge-server
+      labels:
+        k8s-app: edge-server
+    spec:
+      containers:
+        - name: edge-server
+          image: http-proxy-playground/edge:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Djava.net.preferIPv4Stack=true -Dvertx.disableDnsResolver=true"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: edge-service
+  namespace: default
+  labels:
+    k8s-app: edge-service
+spec:
+  type: NodePort
+  selector:
+    k8s-app: edge-server
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: 8443

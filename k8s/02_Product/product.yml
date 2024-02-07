@@ -6,7 +6,7 @@ metadata:
   labels:
     k8s-app: product-server
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       k8s-app: product-server
@@ -23,3 +23,19 @@ spec:
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-Djava.net.preferIPv4Stack=true -Dvertx.disableDnsResolver=true"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: product-service
+  namespace: default
+  labels:
+    k8s-app: product-service
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: product-server
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

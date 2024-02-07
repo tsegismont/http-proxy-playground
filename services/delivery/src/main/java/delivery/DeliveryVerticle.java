@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.http.impl.HttpUtils;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
@@ -13,10 +14,10 @@ import io.vertx.core.net.PfxOptions;
 import io.vertx.ext.auth.KeyStoreOptions;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
-import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
+import io.vertx.ext.web.healthchecks.HealthCheckHandler;
 import io.vertx.micrometer.PrometheusScrapingHandler;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.Pool;
@@ -36,7 +37,6 @@ import java.util.Map;
 import java.util.stream.Collector;
 
 import static common.EnvUtil.*;
-import static io.vertx.ext.web.impl.Utils.canUpgradeToWebsocket;
 import static java.time.temporal.ChronoUnit.*;
 import static java.util.stream.Collectors.groupingBy;
 
@@ -195,7 +195,7 @@ public class DeliveryVerticle extends AbstractVerticle {
   }
 
   private void deliveryUpdates(RoutingContext rc) {
-    if (canUpgradeToWebsocket(rc.request())) {
+    if (HttpUtils.canUpgradeToWebSocket(rc.request())) {
       Future<ServerWebSocket> socketFuture = rc.request().toWebSocket();
       socketFuture
         .onFailure(rc::fail)
@@ -209,6 +209,6 @@ public class DeliveryVerticle extends AbstractVerticle {
   }
 
   private static String extractUsername(RoutingContext rc) {
-    return rc.user().principal().getJsonObject("sub").getString("username");
+    return rc.user().get().principal().getJsonObject("sub").getString("username");
   }
 }

@@ -1,5 +1,6 @@
 package edge;
 
+import common.EnvUtil;
 import common.XServedByHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -7,15 +8,15 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.loadbalancing.LoadBalancer;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PfxOptions;
-import io.vertx.core.net.SocketAddress;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.auth.properties.PropertyFileAuthentication;
-import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.*;
+import io.vertx.ext.web.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.proxy.handler.ProxyHandler;
 import io.vertx.ext.web.sstore.cookie.CookieSessionStore;
 import io.vertx.httpproxy.*;
@@ -25,7 +26,6 @@ import io.vertx.micrometer.PrometheusScrapingHandler;
 import java.util.Set;
 
 import static common.EnvUtil.*;
-import static common.XServedByHandler.X_SERVED_BY;
 import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
 import static io.vertx.core.http.HttpHeaders.COOKIE;
 
@@ -42,7 +42,11 @@ public class EdgeVerticle extends AbstractVerticle {
       .setVerifyHost(false)
       .setDecompressionSupported(true);
 
-    HttpClient httpClient = vertx.createHttpClient(clientOptions);
+    HttpClient httpClient = vertx.httpClientBuilder()
+      .with(clientOptions)
+      .withAddressResolver(RESOLVER)
+      .withLoadBalancer(LoadBalancer.ROUND_ROBIN)
+      .build();
 
     Router router = Router.router(vertx);
 
@@ -114,7 +118,7 @@ public class EdgeVerticle extends AbstractVerticle {
   }
 
   private void identity(RoutingContext rc) {
-    String username = rc.user().principal().getString("username");
+    String username = rc.user().get().principal().getString("username");
     JsonObject reply = identities.getJsonObject(username);
     rc.json(reply);
   }
@@ -128,8 +132,13 @@ public class EdgeVerticle extends AbstractVerticle {
       .setSupportWebSocket(false);
 
     HttpProxy httpProxy = HttpProxy.reverseProxy(proxyOptions, httpClient);
-    httpProxy.origin(productServerPort(), productServerHost());
-    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of(X_SERVED_BY)));
+    httpProxy.originRequestProvider((req, client) -> {
+      RequestOptions requestOptions = new RequestOptions()
+        .setServer(PRODUCT_SERVICE);
+      return client.request(requestOptions);
+    });
+
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of()));
     httpProxy.addInterceptor(new ProductPathInterceptor());
     httpProxy.addInterceptor(new ProductImageFieldInterceptor(vertx));
 
@@ -137,16 +146,14 @@ public class EdgeVerticle extends AbstractVerticle {
   }
 
   private ProxyHandler orderProxyHandler(HttpClient httpClient) {
-    SocketAddress origin = SocketAddress.inetSocketAddress(orderServerPort(), orderServerHost());
-
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(false), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
       RequestOptions requestOptions = new RequestOptions()
-        .setServer(origin)
+        .setServer(ORDER_SERVICE)
         .setSsl(true);
       return client.request(requestOptions);
     });
-    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of(X_SERVED_BY)));
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE, AUTHORIZATION), Set.of()));
     httpProxy.addInterceptor(new ProxyInterceptor() {
       @Override
       public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
@@ -160,18 +167,16 @@ public class EdgeVerticle extends AbstractVerticle {
   }
 
   private ProxyHandler deliveryProxyHandler(HttpClient httpClient) {
-    SocketAddress origin = SocketAddress.inetSocketAddress(deliveryServerPort(), deliveryServerHost());
-
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
       String token = Vertx.currentContext().getLocal("token");
       RequestOptions requestOptions = new RequestOptions()
-        .setServer(origin)
+        .setServer(EnvUtil.DELIVERY_SERVICE)
         .setSsl(true)
         .putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return client.request(requestOptions);
     });
-    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE), Set.of(X_SERVED_BY)));
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE), Set.of()));
 
     return ProxyHandler.create(httpProxy);
   }

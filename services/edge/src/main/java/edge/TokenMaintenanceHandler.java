@@ -29,7 +29,7 @@ class TokenMaintenanceHandler implements Handler<RoutingContext> {
     Session session = rc.session();
     String token;
     if ((token = session.get("token")) == null) {
-      JsonObject claims = new JsonObject().put("sub", rc.user().principal());
+      JsonObject claims = new JsonObject().put("sub", rc.user().get().principal());
       token = authProvider.generateToken(claims, new JWTOptions().setIgnoreExpiration(true));
       session.put("token", token);
     }

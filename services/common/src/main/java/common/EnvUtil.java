@@ -1,6 +1,20 @@
 package common;
 
+import io.vertx.core.net.Address;
+import io.vertx.core.net.AddressResolver;
+import io.vertx.core.net.SocketAddress;
+import io.vertx.serviceresolver.ServiceAddress;
+import io.vertx.serviceresolver.kube.KubeResolver;
+
 public class EnvUtil {
+
+  private static final boolean IS_KUBE = isKube();
+
+  public static final AddressResolver RESOLVER = resolver();
+
+  public static Address PRODUCT_SERVICE = productService();
+  public static Address ORDER_SERVICE = orderService();
+  public static Address DELIVERY_SERVICE = deliveryService();
 
   public static String serverHost() {
     return getOrDefaultString("SERVER_HOST", "0.0.0.0");
@@ -30,27 +44,47 @@ public class EnvUtil {
     return getOrDefaultString("POSTGRES_SERVER_PASSWORD", "mysecretpassword");
   }
 
-  public static String productServerHost() {
+  private static boolean isKube() {
+    return System.getenv().containsKey("KUBERNETES_SERVICE_HOST");
+  }
+
+  private static AddressResolver resolver() {
+    return IS_KUBE ? KubeResolver.create() : null;
+  }
+
+  private static Address productService() {
+    return IS_KUBE ? ServiceAddress.create("product-service") : SocketAddress.inetSocketAddress(productServerPort(), productServerHost());
+  }
+
+  private static String productServerHost() {
     return getOrDefaultString("PRODUCT_SERVER_HOST", "localhost");
   }
 
-  public static int productServerPort() {
+  private static int productServerPort() {
     return getOrDefaultInt("PRODUCT_SERVER_PORT", 8081);
   }
 
-  public static String orderServerHost() {
+  private static Address orderService() {
+    return IS_KUBE ? ServiceAddress.create("order-service") : SocketAddress.inetSocketAddress(orderServerPort(), orderServerHost());
+  }
+
+  private static String orderServerHost() {
     return getOrDefaultString("ORDER_SERVER_HOST", "localhost");
   }
 
-  public static int orderServerPort() {
+  private static int orderServerPort() {
     return getOrDefaultInt("ORDER_SERVER_PORT", 8445);
   }
 
-  public static String deliveryServerHost() {
+  private static Address deliveryService() {
+    return IS_KUBE ? ServiceAddress.create("delivery-service") : SocketAddress.inetSocketAddress(deliveryServerPort(), deliveryServerHost());
+  }
+
+  private static String deliveryServerHost() {
     return getOrDefaultString("DELIVERY_SERVER_HOST", "localhost");
   }
 
-  public static int deliveryServerPort() {
+  private static int deliveryServerPort() {
     return getOrDefaultInt("DELIVERY_SERVER_PORT", 8446);
   }
 
