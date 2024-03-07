@@ -4,6 +4,7 @@ import common.XServedByHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -25,6 +26,13 @@ import io.vertx.sqlclient.Tuple;
 import static common.EnvUtil.*;
 
 public class OrderVerticle extends AbstractVerticle {
+
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new OrderVerticle())
+      .onFailure(Throwable::printStackTrace)
+      .onSuccess(v -> System.out.println("Deployed OrderVerticle"));
+  }
 
   private static final String CREATE_TABLE = """
     CREATE TABLE IF NOT EXISTS "order"

@@ -31,6 +31,13 @@ import static io.vertx.core.http.HttpHeaders.COOKIE;
 
 public class EdgeVerticle extends AbstractVerticle {
 
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new EdgeVerticle())
+      .onFailure(Throwable::printStackTrace)
+      .onSuccess(v -> System.out.println("Deployed EdgeVerticle"));
+  }
+
   private JsonObject identities;
 
   @Override

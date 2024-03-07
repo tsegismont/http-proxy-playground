@@ -3,6 +3,7 @@ package product;
 import common.XServedByHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -20,6 +21,13 @@ import static common.EnvUtil.serverHost;
 import static common.EnvUtil.serverPort;
 
 public class ProductVerticle extends AbstractVerticle {
+
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new ProductVerticle())
+      .onFailure(Throwable::printStackTrace)
+      .onSuccess(v -> System.out.println("Deployed ProductVerticle"));
+  }
 
   private final Map<Integer, JsonObject> products = new HashMap<>();
 

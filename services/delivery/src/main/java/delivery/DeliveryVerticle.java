@@ -4,6 +4,7 @@ import common.XServedByHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.impl.HttpUtils;
@@ -41,6 +42,13 @@ import static java.time.temporal.ChronoUnit.*;
 import static java.util.stream.Collectors.groupingBy;
 
 public class DeliveryVerticle extends AbstractVerticle {
+
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new DeliveryVerticle())
+      .onFailure(Throwable::printStackTrace)
+      .onSuccess(v -> System.out.println("Deployed DeliveryVerticle"));
+  }
 
   private static final Logger LOG = LogManager.getLogger(DeliveryVerticle.class);
 
