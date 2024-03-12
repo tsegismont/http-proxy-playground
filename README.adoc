@@ -9,7 +9,7 @@ It consists in several modules:
 * product service
 * order service
 * delivery service
-* edge (a.k.a proxy or API Gateway) service
+* edge (a.k.a. proxy or API Gateway) service
 
 The backend services expose their APIs over HTTP in JSON format.
 The delivery service also offer a WebSocket endpoint for updates about deliveries.
