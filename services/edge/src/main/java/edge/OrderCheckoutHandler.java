@@ -24,13 +24,10 @@ class OrderCheckoutHandler implements Handler<RoutingContext> {
 
     orderRequest = webClient.request(HttpMethod.POST, new RequestOptions().setServer(ORDER_SERVICE).setURI("/order/checkout"))
       .ssl(true)
-      .expect(ResponsePredicates.STATUS_OK)
-      .expect(ResponsePredicates.CONTENT_JSON)
       .as(BodyCodec.jsonObject());
 
     deliveryRequest = webClient.request(HttpMethod.POST, new RequestOptions().setServer(DELIVERY_SERVICE).setURI("/delivery/add"))
       .ssl(true)
-      .expect(ResponsePredicates.STATUS_OK)
       .as(BodyCodec.jsonObject());
   }
 
@@ -47,9 +44,13 @@ class OrderCheckoutHandler implements Handler<RoutingContext> {
     orderRequest
       .bearerTokenAuthentication(token)
       .sendJsonObject(details)
-      .compose(orderReponse -> deliveryRequest
+      .expecting(ResponseExpectations.STATUS_OK)
+      .expecting(ResponseExpectations.CONTENT_JSON)
+      .compose(orderResponse -> deliveryRequest
         .bearerTokenAuthentication(token)
-        .sendJsonObject(orderReponse.body()))
+        .sendJsonObject(orderResponse.body())
+        .expecting(ResponseExpectations.STATUS_OK)
+      )
       .onComplete(v -> rc.redirect("/account.html"), rc::fail);
   }
 }
