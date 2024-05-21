@@ -60,8 +60,8 @@
     </dependency>
     <dependency>
       <groupId>com.ongres.scram</groupId>
-      <artifactId>client</artifactId>
-      <version>2.1</version>
+      <artifactId>scram-client</artifactId>
+      <version>3.0</version>
     </dependency>
   </dependencies>
 
