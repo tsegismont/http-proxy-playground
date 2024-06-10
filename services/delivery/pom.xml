@@ -16,6 +16,7 @@
 
   <properties>
     <vertx.verticle>delivery.DeliveryVerticle</vertx.verticle>
+    <vertx.skip>false</vertx.skip>
   </properties>
 
   <dependencyManagement>

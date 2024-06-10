@@ -16,6 +16,7 @@
 
   <properties>
     <vertx.verticle>product.ProductVerticle</vertx.verticle>
+    <vertx.skip>false</vertx.skip>
   </properties>
 
   <dependencyManagement>

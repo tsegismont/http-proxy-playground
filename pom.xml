@@ -18,6 +18,7 @@
     <micrometer.version>1.11.5</micrometer.version>
     <vertx.version>5.0.0-SNAPSHOT</vertx.version>
     <vertx.launcher>common.CustomLauncher</vertx.launcher>
+    <vertx.skip>true</vertx.skip>
   </properties>
 
   <modules>
@@ -44,7 +45,7 @@
         <plugin>
           <groupId>io.reactiverse</groupId>
           <artifactId>vertx-maven-plugin</artifactId>
-          <version>1.0.28</version>
+          <version>1.0.29</version>
         </plugin>
         <plugin>
           <groupId>com.google.cloud.tools</groupId>
