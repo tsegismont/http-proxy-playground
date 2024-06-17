@@ -10,7 +10,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PfxOptions;
-import io.vertx.ext.auth.KeyStoreOptions;
+import io.vertx.ext.auth.jose.KeyStoreOptions;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.web.Router;
