@@ -15,7 +15,7 @@
     <log4j.version>2.22.1</log4j.version>
     <jackson.version>2.16.1</jackson.version>
     <opentelemetry.version>1.34.1</opentelemetry.version>
-    <micrometer.version>1.11.5</micrometer.version>
+    <micrometer.version>1.13.1</micrometer.version>
     <vertx.version>5.0.0-SNAPSHOT</vertx.version>
     <vertx.launcher>common.CustomLauncher</vertx.launcher>
     <vertx.skip>true</vertx.skip>
