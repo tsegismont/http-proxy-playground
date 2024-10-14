@@ -53,7 +53,7 @@ public class EnvUtil {
   }
 
   private static Address productService() {
-    return IS_KUBE ? ServiceAddress.create("product-service") : SocketAddress.inetSocketAddress(productServerPort(), productServerHost());
+    return IS_KUBE ? ServiceAddress.of("product-service") : SocketAddress.inetSocketAddress(productServerPort(), productServerHost());
   }
 
   private static String productServerHost() {
@@ -65,7 +65,7 @@ public class EnvUtil {
   }
 
   private static Address orderService() {
-    return IS_KUBE ? ServiceAddress.create("order-service") : SocketAddress.inetSocketAddress(orderServerPort(), orderServerHost());
+    return IS_KUBE ? ServiceAddress.of("order-service") : SocketAddress.inetSocketAddress(orderServerPort(), orderServerHost());
   }
 
   private static String orderServerHost() {
@@ -77,7 +77,7 @@ public class EnvUtil {
   }
 
   private static Address deliveryService() {
-    return IS_KUBE ? ServiceAddress.create("delivery-service") : SocketAddress.inetSocketAddress(deliveryServerPort(), deliveryServerHost());
+    return IS_KUBE ? ServiceAddress.of("delivery-service") : SocketAddress.inetSocketAddress(deliveryServerPort(), deliveryServerHost());
   }
 
   private static String deliveryServerHost() {

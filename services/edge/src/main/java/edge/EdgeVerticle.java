@@ -6,6 +6,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyCertOptions;
@@ -66,7 +67,7 @@ public class EdgeVerticle extends AbstractVerticle {
 
     router.get().handler(StaticHandler.create().setCachingEnabled(true));
 
-    router.route().handler(SessionHandler.create(CookieSessionStore.create(vertx, "foobar")));
+    router.route().handler(SessionHandler.create(CookieSessionStore.create(vertx, "foobar", Buffer.buffer("salt"))));
 
     BasicAuthHandler basicAuthHandler = BasicAuthHandler.create(PropertyFileAuthentication.create(vertx, "users.properties"));
     TokenMaintenanceHandler tokenMaintenanceHandler = new TokenMaintenanceHandler(vertx);
