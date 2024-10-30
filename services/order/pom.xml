@@ -83,13 +83,10 @@
             <id>vmp</id>
             <goals>
               <goal>initialize</goal>
+              <goal>package</goal>
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <redeploy>true</redeploy>
-          <debugSuspend>true</debugSuspend>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>com.google.cloud.tools</groupId>
