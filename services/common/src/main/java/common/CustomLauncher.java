@@ -13,11 +13,15 @@ import io.vertx.micrometer.MicrometerMetricsOptions;
 import io.vertx.micrometer.VertxPrometheusOptions;
 import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
 
-public class CustomLauncher implements VertxApplicationHooks {
+public class CustomLauncher extends VertxApplication implements VertxApplicationHooks {
 
   public static void main(String[] args) {
-    VertxApplication app = new VertxApplication(args, new CustomLauncher());
+    CustomLauncher app = new CustomLauncher(args);
     app.launch();
+  }
+
+  public CustomLauncher(String[] args) {
+    super(args);
   }
 
   @Override
