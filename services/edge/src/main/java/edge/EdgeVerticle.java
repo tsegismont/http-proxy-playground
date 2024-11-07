@@ -83,21 +83,27 @@ public class EdgeVerticle extends AbstractVerticle {
       .handler(tokenMaintenanceHandler)
       .handler(new OrderCheckoutHandler(httpClient));
 
+    router.route("/product*")
+      .handler(basicAuthHandler);
+
     ProxyHandler productProxyHandler = productProxyHandler(httpClient);
     router.route("/product*")
-      .handler(basicAuthHandler)
       .handler(productProxyHandler);
+
+    router.route("/order*")
+      .handler(basicAuthHandler)
+      .handler(tokenMaintenanceHandler);
 
     ProxyHandler orderProxyHandler = orderProxyHandler(httpClient);
     router.route("/order*")
-      .handler(basicAuthHandler)
-      .handler(tokenMaintenanceHandler)
       .handler(orderProxyHandler);
+
+    router.route("/delivery*")
+      .handler(basicAuthHandler)
+      .handler(tokenMaintenanceHandler);
 
     ProxyHandler deliveryProxyHandler = deliveryProxyHandler(httpClient);
     router.route("/delivery*")
-      .handler(basicAuthHandler)
-      .handler(tokenMaintenanceHandler)
       .handler(deliveryProxyHandler);
 
     router.get("/health*").handler(HealthCheckHandler.create(vertx));
