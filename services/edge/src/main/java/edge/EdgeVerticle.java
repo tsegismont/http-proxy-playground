@@ -27,6 +27,7 @@ import io.vertx.micrometer.PrometheusScrapingHandler;
 import java.util.Set;
 
 import static common.EnvUtil.*;
+import static edge.TokenStorageExtension.TOKEN_KEY;
 import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
 import static io.vertx.core.http.HttpHeaders.COOKIE;
 
@@ -132,7 +133,7 @@ public class EdgeVerticle extends AbstractVerticle {
   }
 
   private void identity(RoutingContext rc) {
-    String username = rc.user().get().principal().getString("username");
+    String username = rc.user().principal().getString("username");
     JsonObject reply = identities.getJsonObject(username);
     rc.json(reply);
   }
@@ -171,7 +172,7 @@ public class EdgeVerticle extends AbstractVerticle {
     httpProxy.addInterceptor(new ProxyInterceptor() {
       @Override
       public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
-        String token = Vertx.currentContext().getLocal("token");
+        String token = Vertx.currentContext().getLocal(TOKEN_KEY);
         context.request().putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         return context.sendRequest();
       }
@@ -183,14 +184,14 @@ public class EdgeVerticle extends AbstractVerticle {
   private ProxyHandler deliveryProxyHandler(HttpClient httpClient) {
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
-      String token = Vertx.currentContext().getLocal("token");
+      String token = Vertx.currentContext().getLocal(TOKEN_KEY);
       RequestOptions requestOptions = new RequestOptions()
         .setServer(EnvUtil.DELIVERY_SERVICE)
         .setSsl(true)
         .putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return client.request(requestOptions);
     });
-    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE), Set.of()));
+    httpProxy.addInterceptor(new HeadersInterceptor(Set.of(COOKIE), Set.of()), true);
 
     return ProxyHandler.create(httpProxy);
   }

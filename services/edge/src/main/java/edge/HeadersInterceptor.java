@@ -41,9 +41,4 @@ class HeadersInterceptor implements ProxyInterceptor {
   private void filterResponse(MultiMap headers) {
     responseHeaders.forEach(headers::remove);
   }
-
-  @Override
-  public boolean allowApplyToWebSocket() {
-    return true;
-  }
 }

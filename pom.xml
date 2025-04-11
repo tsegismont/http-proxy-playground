@@ -12,11 +12,10 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <log4j.version>2.22.1</log4j.version>
-    <jackson.version>2.16.1</jackson.version>
-    <opentelemetry.version>1.34.1</opentelemetry.version>
-    <micrometer.version>1.13.1</micrometer.version>
-    <vertx.version>5.0.0-SNAPSHOT</vertx.version>
+    <log4j.version>2.24.3</log4j.version>
+    <opentelemetry.version>1.49.0</opentelemetry.version>
+    <micrometer.version>1.14.5</micrometer.version>
+    <vertx.version>5.0.0.CR6</vertx.version>
     <vertx.launcher>common.CustomLauncher</vertx.launcher>
     <vertx.skip>true</vertx.skip>
   </properties>
@@ -35,12 +34,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.12.1</version>
+          <version>3.14.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.5.3</version>
         </plugin>
         <plugin>
           <groupId>io.reactiverse</groupId>
@@ -53,7 +52,7 @@
         <plugin>
           <groupId>com.google.cloud.tools</groupId>
           <artifactId>jib-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.5</version>
         </plugin>
       </plugins>
     </pluginManagement>

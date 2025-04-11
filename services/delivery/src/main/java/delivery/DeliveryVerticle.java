@@ -217,6 +217,6 @@ public class DeliveryVerticle extends AbstractVerticle {
   }
 
   private static String extractUsername(RoutingContext rc) {
-    return rc.user().get().principal().getJsonObject("sub").getString("username");
+    return rc.user().principal().getJsonObject("sub").getString("username");
   }
 }
