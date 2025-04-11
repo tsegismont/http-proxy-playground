@@ -30,10 +30,9 @@ Assuming `minikube` and `kubectl` are installed:
 
 [source,shell]
 ----
-minikube start
-minikube addons enable dashboard
+minikube start --driver=docker
 minikube addons enable metrics-server
-eval $(minikube -p minikube docker-env)
+minikube addons enable dashboard
 mvn clean install jib:dockerBuild
 kubectl apply -R -f k8s
 ----
