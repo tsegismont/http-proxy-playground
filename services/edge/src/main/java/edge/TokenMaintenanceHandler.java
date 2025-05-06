@@ -10,9 +10,9 @@ import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
 
-import static edge.TokenStorageExtension.TOKEN_KEY;
-
 class TokenMaintenanceHandler implements Handler<RoutingContext> {
+
+  static final String TOKEN_KEY = "__tokenKey";
 
   private final JWTAuth authProvider;
 
@@ -35,7 +35,7 @@ class TokenMaintenanceHandler implements Handler<RoutingContext> {
       token = authProvider.generateToken(claims, new JWTOptions().setIgnoreExpiration(true));
       session.put("token", token);
     }
-    rc.vertx().getOrCreateContext().putLocal(TOKEN_KEY, token);
+    rc.put(TOKEN_KEY, token);
     rc.next();
   }
 }

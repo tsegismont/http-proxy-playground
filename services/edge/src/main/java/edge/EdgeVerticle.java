@@ -16,6 +16,7 @@ import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.auth.properties.PropertyFileAuthentication;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.WebServerRequest;
 import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.proxy.handler.ProxyHandler;
@@ -27,7 +28,7 @@ import io.vertx.micrometer.PrometheusScrapingHandler;
 import java.util.Set;
 
 import static common.EnvUtil.*;
-import static edge.TokenStorageExtension.TOKEN_KEY;
+import static edge.TokenMaintenanceHandler.TOKEN_KEY;
 import static io.vertx.core.http.HttpHeaders.AUTHORIZATION;
 import static io.vertx.core.http.HttpHeaders.COOKIE;
 
@@ -172,8 +173,10 @@ public class EdgeVerticle extends AbstractVerticle {
     httpProxy.addInterceptor(new ProxyInterceptor() {
       @Override
       public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
-        String token = Vertx.currentContext().getLocal(TOKEN_KEY);
-        context.request().putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        ProxyRequest proxyRequest = context.request();
+        WebServerRequest webServerRequest = (WebServerRequest) proxyRequest.proxiedRequest();
+        String token = webServerRequest.routingContext().get(TOKEN_KEY);
+        proxyRequest.putHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         return context.sendRequest();
       }
     });
@@ -184,7 +187,8 @@ public class EdgeVerticle extends AbstractVerticle {
   private ProxyHandler deliveryProxyHandler(HttpClient httpClient) {
     HttpProxy httpProxy = HttpProxy.reverseProxy(new ProxyOptions().setSupportWebSocket(true), httpClient);
     httpProxy.originRequestProvider((request, client) -> {
-      String token = Vertx.currentContext().getLocal(TOKEN_KEY);
+      WebServerRequest webServerRequest = (WebServerRequest) ((ProxyContext) context).request().proxiedRequest();
+      String token = webServerRequest.routingContext().get(TOKEN_KEY);
       RequestOptions requestOptions = new RequestOptions()
         .setServer(EnvUtil.DELIVERY_SERVICE)
         .setSsl(true)
